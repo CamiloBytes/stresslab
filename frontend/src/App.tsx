@@ -143,6 +143,7 @@ export default function App() {
           selectedRun={selectedRun}
           onSelectRun={(run) => setSelectedRunId(run.id)}
           onRunAgain={handleRunAgain}
+          runAgainDisabled={Boolean(busy)}
           onStart={() => void startScenario(selectedScenarioId)}
           onStop={() => void handleStop()}
         />
@@ -161,7 +162,12 @@ export default function App() {
       ) : null}
 
       {view === "history" ? (
-        <HistoryPage runs={runs} loading={false} onRunAgain={handleRunAgain} />
+        <HistoryPage
+          runs={runs}
+          loading={false}
+          onRunAgain={handleRunAgain}
+          runAgainDisabled={Boolean(busy)}
+        />
       ) : null}
     </AppShell>
   );

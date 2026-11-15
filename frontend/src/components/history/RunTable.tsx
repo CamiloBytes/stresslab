@@ -103,9 +103,10 @@ export function RunTable({ runs, selectedId, onSelect }: RunTableProps) {
 interface RunDetailProps {
   run: Run;
   onRunAgain?: (scenarioId: string) => void;
+  runAgainDisabled?: boolean;
 }
 
-export function RunDetail({ run, onRunAgain }: RunDetailProps) {
+export function RunDetail({ run, onRunAgain, runAgainDisabled = false }: RunDetailProps) {
   const summary = run.summary;
 
   return (
@@ -119,9 +120,24 @@ export function RunDetail({ run, onRunAgain }: RunDetailProps) {
       actions={
         <>
           {run.status !== "running" && onRunAgain ? (
-            <Button variant="ghost" className="px-2.5 py-1.5 text-xs" onClick={() => onRunAgain(run.scenarioId)}>
+            <Button
+              variant="ghost"
+              className="px-2.5 py-1.5 text-xs"
+              onClick={() => onRunAgain(run.scenarioId)}
+              disabled={runAgainDisabled}
+              title={runAgainDisabled ? "Termina la corrida activa antes de iniciar otra" : undefined}
+            >
               Volver a ejecutar
             </Button>
+          ) : null}
+          {run.status !== "running" ? (
+            <a
+              href={`/api/runs/${run.id}/report`}
+              download
+              className="inline-flex items-center justify-center rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-mint transition-colors hover:border-mint/50 hover:bg-mint/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint/60"
+            >
+              Descargar PDF
+            </a>
           ) : null}
           <span className="font-mono text-[10px] text-sky/40">{run.id.slice(0, 8)}</span>
         </>

@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { env } from "../config/env.js";
 import type { Scenario } from "../models/types.js";
+import { translateK6Log } from "./k6-log-translator.js";
 
 export type K6Mode = "local" | "docker";
 
@@ -237,23 +238,37 @@ export function startK6(options: {
     env: { ...process.env },
   });
 
+  const consumeLines = (
+    chunk: string,
+    buffer: string,
+    onLine: (line: string) => void,
+  ): string => {
+    const lines = `${buffer}${chunk}`.split(/\r\n|\n|\r/);
+    const remainder = lines.pop() ?? "";
+    for (const line of lines) {
+      if (line.trim()) onLine(line);
+    }
+    return remainder;
+  };
+
   let stdoutBuffer = "";
   child.stdout.on("data", (chunk: Buffer) => {
-    stdoutBuffer += chunk.toString("utf8");
-    const lines = stdoutBuffer.split("\n");
-    stdoutBuffer = lines.pop() ?? "";
-    const jsonLines = lines.filter((line) => line.trim().startsWith("{"));
-    if (jsonLines.length > 0) options.handlers.onMetrics(jsonLines);
+    stdoutBuffer = consumeLines(chunk.toString("utf8"), stdoutBuffer, (line) => {
+      if (line.trim().startsWith("{")) {
+        options.handlers.onMetrics([line]);
+      } else {
+        options.handlers.onLog(translateK6Log(line));
+      }
+    });
   });
 
   let stderrBuffer = "";
   child.stderr.on("data", (chunk: Buffer) => {
-    stderrBuffer += chunk.toString("utf8");
-    const lines = stderrBuffer.split("\n");
-    stderrBuffer = lines.pop() ?? "";
-    for (const line of lines) {
-      if (line.trim()) options.handlers.onLog(line);
-    }
+    stderrBuffer = consumeLines(
+      chunk.toString("utf8"),
+      stderrBuffer,
+      (line) => options.handlers.onLog(translateK6Log(line)),
+    );
   });
 
   child.on("error", (error) => {
@@ -262,6 +277,14 @@ export function startK6(options: {
   });
 
   child.on("exit", (code, signal) => {
+    if (stdoutBuffer.trim()) {
+      if (stdoutBuffer.trim().startsWith("{")) {
+        options.handlers.onMetrics([stdoutBuffer]);
+      } else {
+        options.handlers.onLog(translateK6Log(stdoutBuffer));
+      }
+    }
+    if (stderrBuffer.trim()) options.handlers.onLog(translateK6Log(stderrBuffer));
     options.handlers.onExit(code, signal);
   });
 

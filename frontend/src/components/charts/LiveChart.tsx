@@ -30,28 +30,40 @@ const AXIS_TICK = {
 };
 
 function defaultFormatter(value: number, key: ChartSeries["key"]): string {
-  if (key === "errorRate") return `${(value * 100).toFixed(1)}%`;
+  if (key === "errorRate") return `${Math.round(value * 100)}%`;
   if (key === "avgLatencyMs") return `${Math.round(value)} ms`;
-  return String(Math.round(value * 10) / 10);
+  return String(Math.round(value));
 }
 
 function ChartTooltipContent({
   active,
   payload,
   label,
+  series,
+  valueFormatter,
 }: {
   active?: boolean;
   payload?: Array<{ dataKey?: string | number; color?: string; value?: number; name?: string }>;
   label?: string | number;
+  series: ChartSeries[];
+  valueFormatter: (value: number, key: ChartSeries["key"]) => string;
 }) {
   if (!active || !payload || payload.length === 0) return null;
 
   return (
     <div className="glass rounded-lg px-3 py-2 text-xs">
-      <p className="mb-1 font-mono text-sky/50">t = {String(label)}s</p>
+      <p className="mb-1 font-mono text-sky/50">
+        t = {typeof label === "number" ? Math.round(label) : label}s
+      </p>
       {payload.map((entry) => (
         <p key={String(entry.dataKey)} className="font-mono" style={{ color: entry.color }}>
-          {String(entry.name)}: {entry.value !== undefined ? String(entry.value) : "—"}
+          {String(entry.name)}:{" "}
+          {entry.value !== undefined
+            ? valueFormatter(
+                entry.value,
+                series.find((item) => item.key === entry.dataKey)?.key ?? "rps",
+              )
+            : "—"}
         </p>
       ))}
     </div>
@@ -75,6 +87,7 @@ export function LiveChart({ data, series, height = 220, valueFormatter = default
           <XAxis
             dataKey="t"
             tick={AXIS_TICK}
+            tickFormatter={(value) => String(Math.round(Number(value)))}
             tickLine={false}
             axisLine={{ stroke: "rgba(125,224,255,0.15)" }}
             label={{
@@ -84,9 +97,15 @@ export function LiveChart({ data, series, height = 220, valueFormatter = default
               style: { fill: "rgba(125,224,255,0.35)", fontSize: 9 },
             }}
           />
-          <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} width={54} />
+          <YAxis
+            tick={AXIS_TICK}
+            tickFormatter={(value) => String(Math.round(Number(value)))}
+            tickLine={false}
+            axisLine={false}
+            width={54}
+          />
           <Tooltip
-            content={<ChartTooltipContent />}
+            content={<ChartTooltipContent series={series} valueFormatter={valueFormatter} />}
             formatter={(value, name) => {
               const numeric = typeof value === "number" ? value : Number(value ?? 0);
               const entry = series.find((item) => item.label === String(name));
