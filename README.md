@@ -10,6 +10,7 @@ Aplicación universal para someter a estrés **cualquier URL** — APIs o págin
 - **Escenarios configurables**: tipo API (método, headers, body) o WEB (página), rampa de usuarios o tasa constante (req/s), think time, status esperado, TLS inseguro (certificados autofirmados) y umbrales p95/p99/errores.
 - **Umbrales evaluados**: cada corrida termina con chips ✓/✕ de cada umbral configurado.
 - **Historial persistente**: corridas con resumen (requests, p95, p99, errores, duración).
+- **Informes descargables**: al terminar una corrida puedes descargar un PDF con el objetivo, resultado explicado, hallazgos y oportunidades de mejora.
 - **Base de datos intercambiable**: SQLite por defecto; cambia a MySQL o PostgreSQL solo con variables de entorno.
 
 ## Arquitectura
@@ -96,7 +97,12 @@ Las migraciones se ejecutan automáticamente al arrancar.
 1. Abre el **Tablero**, elige un escenario (hay dos ejemplos al primer arranque) y pulsa **Iniciar prueba**.
 2. Mira las métricas, gráficas y la consola de k6 en tiempo real.
 3. Al terminar, revisa el resumen con p95/p99 y el resultado de los umbrales.
-4. Crea tus propios escenarios en **Escenarios** (URL, método, headers, carga, umbrales) y consulta el **Historial**.
+4. Descarga el informe completo desde el detalle de la corrida terminada.
+5. Crea tus propios escenarios en **Escenarios** (URL, método, headers, carga, umbrales) y consulta el **Historial**.
+
+Consulta la [guía completa de uso](docs/guia-uso-stresslab.md) para ejemplos de
+URLs públicas y privadas, pruebas de usuarios concurrentes, interpretación de
+métricas y alcance de la fase 2.
 
 ### Notas sobre URLs privadas
 
@@ -120,4 +126,5 @@ pnpm stress       # smoke test vía Docker contra /api/health
 | GET | `/api/runs/active` | Corrida activa + métricas en vivo |
 | POST | `/api/runs/stop` | Detener la corrida activa |
 | GET | `/api/runs/:id` | Detalle de corrida |
+| GET | `/api/runs/:id/report` | Descargar informe PDF explicado |
 | GET | `/api/runs/stream` | SSE: `status`, `metrics`, `log` |

@@ -130,6 +130,15 @@ export function RunDetail({ run, onRunAgain, runAgainDisabled = false }: RunDeta
               Volver a ejecutar
             </Button>
           ) : null}
+          {run.status !== "running" ? (
+            <a
+              href={`/api/runs/${run.id}/report`}
+              download
+              className="inline-flex items-center justify-center rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-mint transition-colors hover:border-mint/50 hover:bg-mint/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint/60"
+            >
+              Descargar PDF
+            </a>
+          ) : null}
           <span className="font-mono text-[10px] text-sky/40">{run.id.slice(0, 8)}</span>
         </>
       }

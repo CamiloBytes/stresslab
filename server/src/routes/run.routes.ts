@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   getActiveRun,
   getRun,
+  downloadRunReport,
   listRuns,
   startRun,
   stopRun,
@@ -15,4 +16,5 @@ runRouter.get("/active", getActiveRun);
 runRouter.post("/", startRun);
 runRouter.post("/stop", stopRun);
 runRouter.get("/stream", streamEvents);
+runRouter.get("/:id/report", downloadRunReport);
 runRouter.get("/:id", getRun);
