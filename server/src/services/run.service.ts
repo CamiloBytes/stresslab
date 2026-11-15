@@ -369,6 +369,10 @@ class RunService {
     this.active = { run, handle, runDir, acc, stopping: false };
     sseHub.broadcast("status", { run });
     sseHub.broadcast("metrics", { runId, ...toLiveMetrics(acc) });
+    sseHub.broadcast("log", {
+      runId,
+      line: `k6 iniciado (${availability.mode === "docker" ? "Docker" : "local"}).`,
+    });
     if (dockerMode && targetUrl !== scenario.url) {
       sseHub.broadcast("log", {
         runId,
