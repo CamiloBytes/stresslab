@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { env } from "../config/env.js";
 import type { Scenario } from "../models/types.js";
+import { translateK6Log } from "./k6-log-translator.js";
 
 export type K6Mode = "local" | "docker";
 
@@ -256,14 +257,18 @@ export function startK6(options: {
       if (line.trim().startsWith("{")) {
         options.handlers.onMetrics([line]);
       } else {
-        options.handlers.onLog(line);
+        options.handlers.onLog(translateK6Log(line));
       }
     });
   });
 
   let stderrBuffer = "";
   child.stderr.on("data", (chunk: Buffer) => {
-    stderrBuffer = consumeLines(chunk.toString("utf8"), stderrBuffer, options.handlers.onLog);
+    stderrBuffer = consumeLines(
+      chunk.toString("utf8"),
+      stderrBuffer,
+      (line) => options.handlers.onLog(translateK6Log(line)),
+    );
   });
 
   child.on("error", (error) => {
@@ -276,10 +281,10 @@ export function startK6(options: {
       if (stdoutBuffer.trim().startsWith("{")) {
         options.handlers.onMetrics([stdoutBuffer]);
       } else {
-        options.handlers.onLog(stdoutBuffer);
+        options.handlers.onLog(translateK6Log(stdoutBuffer));
       }
     }
-    if (stderrBuffer.trim()) options.handlers.onLog(stderrBuffer);
+    if (stderrBuffer.trim()) options.handlers.onLog(translateK6Log(stderrBuffer));
     options.handlers.onExit(code, signal);
   });
 

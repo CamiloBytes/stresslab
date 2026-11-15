@@ -371,7 +371,11 @@ class RunService {
     sseHub.broadcast("metrics", { runId, ...toLiveMetrics(acc) });
     sseHub.broadcast("log", {
       runId,
-      line: `k6 iniciado (${availability.mode === "docker" ? "Docker" : "local"}).`,
+      line: "Compilando prueba: script k6 generado y escenario validado.",
+    });
+    sseHub.broadcast("log", {
+      runId,
+      line: `Iniciando proceso k6 en ${availability.mode === "docker" ? "Docker" : "local"}.`,
     });
     if (dockerMode && targetUrl !== scenario.url) {
       sseHub.broadcast("log", {

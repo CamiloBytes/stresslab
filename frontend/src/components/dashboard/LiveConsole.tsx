@@ -50,8 +50,8 @@ export function LiveConsole({ logs, running }: LiveConsoleProps) {
           />
         ) : (
           logs.map((entry) => (
-            <p key={entry.id} className="whitespace-pre-wrap break-all text-sky/55">
-              <span className="text-cyan-glow/50">›</span> {entry.line}
+            <p key={entry.id} className="whitespace-pre-wrap break-all text-mint/80">
+              <span className="text-mint">›</span> {entry.line}
             </p>
           ))
         )}
