@@ -103,9 +103,10 @@ export function RunTable({ runs, selectedId, onSelect }: RunTableProps) {
 interface RunDetailProps {
   run: Run;
   onRunAgain?: (scenarioId: string) => void;
+  runAgainDisabled?: boolean;
 }
 
-export function RunDetail({ run, onRunAgain }: RunDetailProps) {
+export function RunDetail({ run, onRunAgain, runAgainDisabled = false }: RunDetailProps) {
   const summary = run.summary;
 
   return (
@@ -119,7 +120,13 @@ export function RunDetail({ run, onRunAgain }: RunDetailProps) {
       actions={
         <>
           {run.status !== "running" && onRunAgain ? (
-            <Button variant="ghost" className="px-2.5 py-1.5 text-xs" onClick={() => onRunAgain(run.scenarioId)}>
+            <Button
+              variant="ghost"
+              className="px-2.5 py-1.5 text-xs"
+              onClick={() => onRunAgain(run.scenarioId)}
+              disabled={runAgainDisabled}
+              title={runAgainDisabled ? "Termina la corrida activa antes de iniciar otra" : undefined}
+            >
               Volver a ejecutar
             </Button>
           ) : null}

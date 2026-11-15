@@ -25,6 +25,7 @@ interface DashboardPageProps {
   selectedRun: Run | null;
   onSelectRun: (run: Run) => void;
   onRunAgain: (scenarioId: string) => void;
+  runAgainDisabled: boolean;
   onStart: () => void;
   onStop: () => void;
 }
@@ -44,6 +45,7 @@ export function DashboardPage({
   selectedRun,
   onSelectRun,
   onRunAgain,
+  runAgainDisabled,
   onStart,
   onStop,
 }: DashboardPageProps) {
@@ -150,7 +152,7 @@ export function DashboardPage({
         <LiveConsole logs={logs} running={running} />
 
         {selectedRun ? (
-          <RunDetail run={selectedRun} onRunAgain={onRunAgain} />
+          <RunDetail run={selectedRun} onRunAgain={onRunAgain} runAgainDisabled={runAgainDisabled} />
         ) : (
           <Panel title="Resultado de la corrida">
             <EmptyState

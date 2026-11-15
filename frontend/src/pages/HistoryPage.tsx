@@ -7,9 +7,10 @@ interface HistoryPageProps {
   runs: Run[];
   loading: boolean;
   onRunAgain: (scenarioId: string) => void;
+  runAgainDisabled: boolean;
 }
 
-export function HistoryPage({ runs, loading, onRunAgain }: HistoryPageProps) {
+export function HistoryPage({ runs, loading, onRunAgain, runAgainDisabled }: HistoryPageProps) {
   const [selected, setSelected] = useState<Run | null>(null);
 
   useEffect(() => {
@@ -35,7 +36,7 @@ export function HistoryPage({ runs, loading, onRunAgain }: HistoryPageProps) {
 
       <div className="xl:sticky xl:top-20 xl:self-start">
         {selected ? (
-          <RunDetail run={selected} onRunAgain={onRunAgain} />
+          <RunDetail run={selected} onRunAgain={onRunAgain} runAgainDisabled={runAgainDisabled} />
         ) : (
           <Panel title="Detalle de la corrida">
             <p className="py-8 text-center text-xs text-sky/40">
