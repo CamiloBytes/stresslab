@@ -39,10 +39,14 @@ function ChartTooltipContent({
   active,
   payload,
   label,
+  series,
+  valueFormatter,
 }: {
   active?: boolean;
   payload?: Array<{ dataKey?: string | number; color?: string; value?: number; name?: string }>;
   label?: string | number;
+  series: ChartSeries[];
+  valueFormatter: (value: number, key: ChartSeries["key"]) => string;
 }) {
   if (!active || !payload || payload.length === 0) return null;
 
@@ -53,7 +57,13 @@ function ChartTooltipContent({
       </p>
       {payload.map((entry) => (
         <p key={String(entry.dataKey)} className="font-mono" style={{ color: entry.color }}>
-          {String(entry.name)}: {entry.value !== undefined ? String(entry.value) : "—"}
+          {String(entry.name)}:{" "}
+          {entry.value !== undefined
+            ? valueFormatter(
+                entry.value,
+                series.find((item) => item.key === entry.dataKey)?.key ?? "rps",
+              )
+            : "—"}
         </p>
       ))}
     </div>
@@ -77,6 +87,7 @@ export function LiveChart({ data, series, height = 220, valueFormatter = default
           <XAxis
             dataKey="t"
             tick={AXIS_TICK}
+            tickFormatter={(value) => String(Math.round(Number(value)))}
             tickLine={false}
             axisLine={{ stroke: "rgba(125,224,255,0.15)" }}
             label={{
@@ -94,7 +105,7 @@ export function LiveChart({ data, series, height = 220, valueFormatter = default
             width={54}
           />
           <Tooltip
-            content={<ChartTooltipContent />}
+            content={<ChartTooltipContent series={series} valueFormatter={valueFormatter} />}
             formatter={(value, name) => {
               const numeric = typeof value === "number" ? value : Number(value ?? 0);
               const entry = series.find((item) => item.label === String(name));
