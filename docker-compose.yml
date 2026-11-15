@@ -1,0 +1,24 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      DB_CLIENT: better-sqlite3
+      DB_FILE: /app/data/stresslab.db
+      RUNS_DIR: /app/data/runs
+    volumes:
+      - ./data:/app/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+  k6:
+    image: grafana/k6:latest
+    profiles: ["stress"]
+    depends_on:
+      - app
+    volumes:
+      - ./tests/k6:/scripts:ro
+    environment:
+      BASE_URL: http://app:3000/api/health
+    command: run /scripts/smoke.js

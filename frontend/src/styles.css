@@ -1,0 +1,17 @@
+:root { color: #e8edf2; background: #101417; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+.shell { max-width: 1100px; margin: 0 auto; padding: 9rem 2rem; }
+.hero { max-width: 720px; }
+.eyebrow { color: #7ee787; font-size: .75rem; font-weight: 800; letter-spacing: .2em; }
+h1 { font-size: clamp(3rem, 8vw, 6.5rem); line-height: .96; letter-spacing: -.07em; margin: 1.5rem 0; }
+.lead { color: #9da8b2; font-size: 1.2rem; line-height: 1.6; max-width: 560px; }
+.actions { display: flex; align-items: center; gap: 1.25rem; margin-top: 2.5rem; }
+button { border: 0; border-radius: 999px; background: #7ee787; color: #101417; cursor: pointer; font-weight: 800; padding: .9rem 1.4rem; }
+.status { color: #9da8b2; font-size: .9rem; }
+.status i { background: #7ee787; border-radius: 50%; display: inline-block; height: .55rem; margin-right: .4rem; width: .55rem; }
+.cards { display: grid; gap: 1rem; grid-template-columns: repeat(3, 1fr); margin-top: 8rem; }
+.cards article { background: #171d21; border: 1px solid #293239; border-radius: 1rem; display: flex; flex-direction: column; gap: .5rem; padding: 1.5rem; }
+.cards strong { font-size: 1.5rem; }
+.cards span { color: #89949e; font-size: .9rem; }
+@media (max-width: 640px) { .shell { padding: 5rem 1.25rem; } .cards { grid-template-columns: 1fr; margin-top: 5rem; } }
