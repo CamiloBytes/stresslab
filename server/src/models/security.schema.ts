@@ -37,12 +37,10 @@ export const zapReportSchema = z
     alerts: z.array(zapAlertSchema).max(2000).optional(),
   })
   .superRefine((value, ctx) => {
-    const siteAlerts = value.site?.reduce((total, site) => total + (site.alerts?.length ?? 0), 0) ?? 0;
-    const total = siteAlerts + (value.alerts?.length ?? 0);
-    if (total === 0) {
+    if (!value.alerts && !value.site?.some(site => Array.isArray(site.alerts))) {
       ctx.addIssue({
         code: "custom",
-        message: "El reporte no contiene alertas (formato no reconocido o escaneo sin hallazgos)",
+        message: "Formato no reconocido: se requiere una lista de alertas",
       });
     }
   });

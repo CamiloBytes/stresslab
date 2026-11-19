@@ -45,11 +45,13 @@ export function SecurityPage({ projects, loadingProjects, onProjectsChange, onTo
   const [assessments, setAssessments] = useState<SecurityAssessment[]>([]);
   const [loading, setLoading] = useState(true);
   const [aiAvailable, setAiAvailable] = useState(false);
+  const [aiMessage, setAiMessage] = useState("");
   const [selected, setSelected] = useState<{
     assessment: SecurityAssessment;
     findings: SecurityFinding[];
   } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [target,setTarget] = useState('');
   const [importOpen, setImportOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const [projectModalOpen, setProjectModalOpen] = useState(false);
@@ -72,6 +74,7 @@ export function SecurityPage({ projects, loadingProjects, onProjectsChange, onTo
       const result = await api.listAssessments(projectId || undefined);
       setAssessments(result.assessments);
       setAiAvailable(result.aiAvailable);
+      setAiMessage(result.ai.hint ?? `Proveedor de IA: ${result.ai.label} · ${result.ai.model}`);
     } catch {
       onToast("No se pudieron cargar las evaluaciones", "error");
     } finally {
@@ -226,14 +229,12 @@ export function SecurityPage({ projects, loadingProjects, onProjectsChange, onTo
         </div>
       </div>
 
-      {!aiAvailable ? (
-        <p className="rounded-lg border border-amber/40 bg-amber/10 px-4 py-3 text-xs leading-relaxed text-amber/90">
-          Análisis IA no configurado. Define <code className="font-mono">BEDROCK_MODEL_ID</code>,{" "}
-          <code className="font-mono">AWS_REGION</code>, <code className="font-mono">AWS_ACCESS_KEY_ID</code> y{" "}
-          <code className="font-mono">AWS_SECRET_ACCESS_KEY</code> para habilitar la interpretación de hallazgos con
-          Amazon Bedrock. La importación y revisión funcionan sin IA.
-        </p>
-      ) : null}
+      {aiMessage && <p className="text-xs text-sky/75">{aiMessage}</p>}
+      {currentProject && hasScope && <Panel title="Revisión pasiva con ZAP">
+        <p className="mb-3 text-xs text-sky/70">Revisa una respuesta HTTPS sin seguir enlaces. La URL debe estar autorizada en PASSIVE_TARGETS del servidor.</p>
+        <SelectField label="URL del proyecto" value={currentProject.scope.includes(target)?target:currentProject.scope[0]} onChange={e=>setTarget(e.target.value)} options={currentProject.scope.map(value=>({value,label:value}))}/>
+        <Button variant="primary" loading={busy} onClick={async()=>{setBusy(true);try{const a=await api.scan(currentProject.id,currentProject.scope.includes(target)?target:currentProject.scope[0]);await loadAssessments();await openDetail(a);}catch(e){onToast(e instanceof Error?e.message:'No se pudo revisar','error');}finally{setBusy(false);}}}>{busy?'Revisando respuesta…':'Revisar objetivo'}</Button>
+      </Panel>}
 
       {compareOpen ? (
         <ComparePanel
@@ -348,6 +349,14 @@ export function SecurityPage({ projects, loadingProjects, onProjectsChange, onTo
         onClose={() => setImportOpen(false)}
         onSubmit={handleImport}
       />
+
+      {currentProject && <Panel title="Estudios propios del proyecto"><details key={currentProject.id}><summary className="cursor-pointer">Registrar hallazgo manual</summary>
+        <form className="mt-3 grid gap-3" onSubmit={async event=>{event.preventDefault();const form=event.currentTarget;const data=Object.fromEntries(new FormData(form)) as Record<string,string>;setBusy(true);try{const a=await api.recordFinding({...data,projectId:currentProject.id});await loadAssessments();await openDetail(a);}catch(e){onToast(e instanceof Error?e.message:'Error al registrar','error');}finally{setBusy(false);}}}>
+          <TextField label="Título del hallazgo" name="title" required maxLength={120}/><TextField label="URL observada" name="targetUrl" type="url" required defaultValue={currentProject.scope[0]}/>
+          <SelectField label="Severidad" name="severity" options={Object.entries(SEVERITY_LABEL).map(([value,label])=>({value,label}))}/><TextField label="Método HTTP (opcional)" name="method" maxLength={10}/>
+          <TextField label="Evidencia observada" name="evidence" required maxLength={8000}/><TextField label="Recomendación (opcional)" name="solution" maxLength={4000}/>
+          <Button type="submit" variant="primary" loading={busy}>Guardar hallazgo pendiente de revisión</Button>
+        </form></details></Panel>}
 
       <Modal
         open={projectModalOpen}

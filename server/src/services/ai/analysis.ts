@@ -1,6 +1,5 @@
-import { BedrockRuntimeClient, ConverseCommand } from "@aws-sdk/client-bedrock-runtime";
+import { extractJson, resolveProvider, providerNotFoundMessage } from "./provider.js";
 import { z } from "zod";
-import { env } from "../../config/env.js";
 import { HttpError } from "../../middleware/http-error.js";
 import type {
   AiAssessmentAnalysis,
@@ -33,46 +32,10 @@ const SEVERITY_LABEL: Record<FindingSeverity, string> = {
   info: "Informativa",
 };
 
-function isConfigured(): boolean {
-  return Boolean(env.bedrockModelId && env.awsRegion && env.awsAccessKeyId && env.awsSecretAccessKey);
-}
-
-function client(): BedrockRuntimeClient {
-  return new BedrockRuntimeClient({
-    region: env.awsRegion,
-    credentials: {
-      accessKeyId: env.awsAccessKeyId,
-      secretAccessKey: env.awsSecretAccessKey,
-    },
-  });
-}
-
-function extractJson(text: string): unknown {
-  const trimmed = text.trim();
-  const fenced = /```(?:json)?\s*([\s\S]*?)```/.exec(trimmed);
-  const candidate = fenced?.[1]?.trim() ?? trimmed;
-  const start = candidate.indexOf("{");
-  const end = candidate.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) {
-    throw new Error("La respuesta no contiene JSON");
-  }
-  return JSON.parse(candidate.slice(start, end + 1));
-}
-
-async function converse(system: string, prompt: string): Promise<unknown> {
-  const command = new ConverseCommand({
-    modelId: env.bedrockModelId,
-    system: [{ text: system }],
-    messages: [{ role: "user", content: [{ text: prompt }] }],
-    inferenceConfig: { maxTokens: 4096, temperature: 0.2 },
-  });
-
-  const response = await client().send(command);
-  const text = response.output?.message?.content
-    ?.map((block) => ("text" in block ? block.text : ""))
-    .join("");
-  if (!text) throw new Error("Bedrock devolvió una respuesta vacía");
-  return extractJson(text);
+function requireProvider() {
+  const provider = resolveProvider();
+  if (!provider) throw new HttpError(503, providerNotFoundMessage());
+  return provider;
 }
 
 const FINDING_SYSTEM = `Eres un analista de seguridad senior. Analizas hallazgos de escaneos automatizados (NO ejecutas comandos ni exploras el objetivo).
@@ -93,21 +56,12 @@ Reglas:
 - executive_summary: 3-6 frases para un responsable técnico, en español.
 - technical_recommendations: acciones ordenadas por prioridad.`;
 
-export function aiAvailable(): boolean {
-  return isConfigured();
-}
-
 export async function analyzeFinding(
   finding: SecurityFinding,
   project: Project | null,
   assessment: SecurityAssessment,
 ): Promise<AiFindingAnalysis> {
-  if (!isConfigured()) {
-    throw new HttpError(
-      503,
-      "Análisis IA no configurado. Define BEDROCK_MODEL_ID, AWS_REGION, AWS_ACCESS_KEY_ID y AWS_SECRET_ACCESS_KEY.",
-    );
-  }
+  const provider = requireProvider();
 
   const prompt = JSON.stringify({
     proyecto: project ? { nombre: project.name, entorno: project.environment, stack: "no especificado" } : null,
@@ -132,7 +86,7 @@ export async function analyzeFinding(
   });
 
   try {
-    const raw = await converse(FINDING_SYSTEM, prompt);
+    const raw = extractJson(await provider.complete(FINDING_SYSTEM, prompt));
     const parsed = aiFindingSchema.parse(raw);
     return {
       impact: parsed.impact,
@@ -154,12 +108,7 @@ export async function analyzeAssessment(
   findings: SecurityFinding[],
   project: Project | null,
 ): Promise<AiAssessmentAnalysis> {
-  if (!isConfigured()) {
-    throw new HttpError(
-      503,
-      "Análisis IA no configurado. Define BEDROCK_MODEL_ID, AWS_REGION, AWS_ACCESS_KEY_ID y AWS_SECRET_ACCESS_KEY.",
-    );
-  }
+  const provider = requireProvider();
 
   const top = [...findings]
     .sort((a, b) => severityRank(b.severity) - severityRank(a.severity))
@@ -193,7 +142,7 @@ export async function analyzeAssessment(
   });
 
   try {
-    const raw = await converse(ASSESSMENT_SYSTEM, prompt);
+    const raw = extractJson(await provider.complete(ASSESSMENT_SYSTEM, prompt));
     const parsed = aiAssessmentSchema.parse(raw);
     return {
       summary: parsed.summary,
@@ -201,7 +150,7 @@ export async function analyzeAssessment(
       executiveSummary: parsed.executive_summary,
       technicalRecommendations: parsed.technical_recommendations,
       generatedAt: new Date().toISOString(),
-      model: env.bedrockModelId,
+      model: `${provider.label} · ${provider.model}`,
     };
   } catch (error) {
     if (error instanceof HttpError) throw error;

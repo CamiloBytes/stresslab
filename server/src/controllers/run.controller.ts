@@ -12,7 +12,7 @@ const startSchema = z.object({
 
 export async function listRuns(request: Request, response: Response): Promise<void> {
   const limit = Number(request.query.limit ?? 50);
-  const runs = await runRepository.list(Number.isFinite(limit) ? limit : 50);
+  const runs = await runRepository.list(Number.isFinite(limit) ? Math.min(200,Math.max(1,Math.trunc(limit))) : 50);
   response.json(runs);
 }
 

@@ -3,3 +3,4 @@ dist
 frontend/dist
 .git
 .env
+data/

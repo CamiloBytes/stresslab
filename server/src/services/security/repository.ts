@@ -108,6 +108,11 @@ function toFinding(row: FindingRow): SecurityFinding {
 }
 
 export class SecurityRepository {
+  async saveAnalysisBatch(findings: Pick<SecurityFinding,'id'|'aiAnalysis'>[]):Promise<void> {
+    await db.transaction(async trx=>{
+      for(const finding of findings) await trx('security_findings').where({id:finding.id}).update({aiAnalysis:JSON.stringify(finding.aiAnalysis)});
+    });
+  }
   async findByFingerprint(projectId: string, reportFingerprint: string): Promise<SecurityAssessment | null> {
     const row = await db<AssessmentRow>("security_assessments")
       .where({ projectId, reportFingerprint })

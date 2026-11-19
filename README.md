@@ -132,7 +132,12 @@ pnpm stress       # smoke test vía Docker contra /api/health
 | GET/PUT/DELETE | `/api/projects/:id` | Leer / actualizar / eliminar proyecto |
 | GET/POST | `/api/security/assessments` | Listar (`?projectId=`) / importar reporte ZAP |
 | GET | `/api/security/assessments/:id` | Evaluación + hallazgos |
-| POST | `/api/security/assessments/:id/analyze` | Análisis IA (Amazon Bedrock) |
+| POST | `/api/security/assessments/:id/analyze` | Análisis con el proveedor de IA configurado |
+| POST | `/api/security/assessments/scan` | Revisión pasiva de una respuesta HTTPS mediante ZAP |
+| GET | `/api/security/zap/status` | Disponibilidad de ZAP |
+| POST | `/api/security/assessments/manual` | Registrar un hallazgo propio sin contactar el objetivo |
+
+Para revisar GreenPath desde Docker, añade `PASSIVE_TARGETS=https://greenpathapi.devnova.dev/` en `.env`, guarda esa misma URL en el alcance del proyecto y ejecuta `docker compose up -d --build app`. En Seguridad selecciona el proyecto y pulsa **Revisar objetivo**. ZAP observa una respuesta normal sin seguir redirecciones; cero alertas no implica que toda la API sea segura. El primer arranque requiere descargar la imagen de ZAP. **Estudios propios del proyecto** permite registrar evidencia manual sin esperar a ZAP.
 | GET | `/api/security/assessments/compare?from=&to=` | Comparar dos evaluaciones |
 | GET | `/api/security/assessments/:id/report` | Informe PDF de seguridad (`?withRun=true` incluye rendimiento) |
 | PATCH | `/api/security/findings/:id` | Revisión manual (`status`, `reviewNote`) |
@@ -144,7 +149,8 @@ StressLab incluye un módulo de **Automated Security Assessment** (no sustituye 
 - **Proyectos**: agrupan escenarios k6 y evaluaciones de seguridad; pueden declarar un *alcance* de URLs autorizadas y rechazan reportes fuera de ese alcance (403).
 - **Importación ZAP**: pega o carga el reporte JSON de OWASP ZAP. Se valida con Zod, se normaliza (severidad, endpoint, parámetro, evidencia) y se deduplica por huella del reporte (409 si ya fue importado).
 - **Revisión manual**: cada hallazgo tiene estado propio (`pendiente`, `confirmada`, `descartada`, `remediada`) y nota de revisión. La severidad del escáner y el estado de revisión son campos separados.
-- **Análisis IA (opcional)**: con `BEDROCK_MODEL_ID` y credenciales AWS, Amazon Bedrock genera impacto, recomendación y confianza por hallazgo más un resumen ejecutivo. La IA no cambia estados de revisión ni confirma vulnerabilidades. Sin credenciales, el resto del módulo sigue funcionando.
+- **Análisis IA (opcional)**: OpenRouter, OpenAI, Anthropic o Amazon Bedrock generan recomendaciones y un resumen ejecutivo. Al pulsar «Analizar con IA», se envían al proveedor datos del proyecto y de los hallazgos, incluidos endpoints y extractos de evidencia. Usa reportes depurados. La revisión manual sigue siendo independiente.
+
+  Para usar modelos gratuitos con OpenRouter, configura en `.env` `AI_PROVIDER=openrouter`, `OPENROUTER_API_KEY` y `OPENROUTER_MODEL=openrouter/free`. La disponibilidad y los límites dependen de OpenRouter. Para usar OpenAI o Anthropic directamente, selecciona `openai` o `anthropic` y usa las variables de clave y modelo de `.env.example`. Bedrock conserva su configuración anterior. Sin selección explícita se toma el primer proveedor configurado: OpenRouter, OpenAI, Anthropic y Bedrock, en ese orden. Un fallo no envía los datos a otro proveedor. Aplica los cambios con `docker compose up -d --build app`.
 - **Comparación**: dos evaluaciones del mismo proyecto se cruzan por identidad estable (regla + método + endpoint + parámetro) en *persistentes*, *nuevos* y *no observados*. «No observado» no equivale a «corregido».
 - **Informes**: PDF con severidades, hallazgos, análisis IA y, opcionalmente, la última corrida k6 del proyecto.
-

@@ -24,6 +24,7 @@ function runCommand(command: string, timeoutMs = 5_000): Promise<{ code: number 
     const finish = (code: number | null) => {
       if (settled) return;
       settled = true;
+      clearTimeout(timer);
       resolve({ code, stdout });
     };
 
@@ -33,7 +34,7 @@ function runCommand(command: string, timeoutMs = 5_000): Promise<{ code: number 
     child.on("error", () => finish(null));
     child.on("exit", (code) => finish(code));
 
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       child.kill();
       finish(null);
     }, timeoutMs);

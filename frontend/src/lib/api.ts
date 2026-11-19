@@ -50,6 +50,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   health: () => request<Health>("/api/health"),
+  recordFinding: (input: Record<string,string>) => request<SecurityAssessment>('/api/security/assessments/manual',{method:'POST',body:JSON.stringify(input)}),
+  scan: (projectId: string,targetUrl: string) => request<SecurityAssessment>('/api/security/assessments/scan',{method:'POST',body:JSON.stringify({projectId,targetUrl})}),
 
   listScenarios: () => request<Scenario[]>("/api/scenarios"),
   createScenario: (input: ScenarioInput) =>
@@ -74,7 +76,7 @@ export const api = {
   deleteProject: (id: string) => request<void>(`/api/projects/${id}`, { method: "DELETE" }),
 
   listAssessments: (projectId?: string) =>
-    request<{ assessments: SecurityAssessment[]; aiAvailable: boolean }>(
+    request<{ assessments: SecurityAssessment[]; aiAvailable: boolean; ai: { label: string | null; model: string | null; hint: string | null } }>(
       `/api/security/assessments${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ""}`,
     ),
   getAssessment: (id: string) =>

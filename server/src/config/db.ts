@@ -35,6 +35,7 @@ function buildConfig(): Knex.Config {
   return {
     client: "better-sqlite3",
     connection: { filename },
+    pool: {min:1,max:1},
     useNullAsDefault: true,
   };
 }

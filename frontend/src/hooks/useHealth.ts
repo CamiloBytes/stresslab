@@ -11,6 +11,7 @@ export function useHealth(): Health | null {
     let alive = true;
 
     const load = () => {
+      if (document.hidden) return;
       api
         .health()
         .then((value) => {
@@ -22,9 +23,11 @@ export function useHealth(): Health | null {
     };
 
     load();
+    document.addEventListener('visibilitychange',load);
     const timer = window.setInterval(load, POLL_MS);
     return () => {
       alive = false;
+      document.removeEventListener('visibilitychange',load);
       window.clearInterval(timer);
     };
   }, []);

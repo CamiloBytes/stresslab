@@ -91,6 +91,8 @@ export function AssessmentDetail({
 
   const selected = filtered.find((finding) => finding.id === selectedId) ?? filtered[0] ?? null;
   const summary = assessment.severitySummary;
+  const [page,setPage] = useState(0);
+  const currentPage = Math.min(page, Math.max(0,Math.ceil(filtered.length/50)-1));
 
   return (
     <div className="flex flex-col gap-5">
@@ -134,7 +136,7 @@ export function AssessmentDetail({
             disabled={busy || findings.length === 0 || !aiAvailable}
             title={
               !aiAvailable
-                ? "Configura AWS Bedrock para habilitar el análisis IA"
+                ? "Configura el proveedor de IA en el servidor"
                 : findings.length === 0
                   ? "No hay hallazgos para analizar"
                   : undefined
@@ -279,7 +281,7 @@ export function AssessmentDetail({
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((finding) => {
+                  {filtered.slice(currentPage*50,currentPage*50+50).map((finding) => {
                     const active = selected?.id === finding.id;
                     return (
                       <tr
@@ -313,6 +315,7 @@ export function AssessmentDetail({
                   })}
                 </tbody>
               </table>
+              {filtered.length>50 && <div className="flex justify-between p-2"><Button disabled={currentPage===0} onClick={()=>setPage(currentPage-1)}>Anterior</Button><span>{currentPage+1} / {Math.ceil(filtered.length/50)}</span><Button disabled={(currentPage+1)*50>=filtered.length} onClick={()=>setPage(currentPage+1)}>Siguiente</Button></div>}
             </div>
           )}
         </Panel>

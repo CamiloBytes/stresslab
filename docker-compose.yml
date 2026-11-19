@@ -1,18 +1,53 @@
 services:
   app:
+    depends_on: [zap]
+    mem_limit: ${APP_MEMORY_LIMIT:-1g}
+    cpus: ${APP_CPU_LIMIT:-2}
+    pids_limit: 256
     build: .
     ports:
       - "3000:3000"
     environment:
       PORT: 3000
+      ZAP_URL: http://zap:8080
+      PASSIVE_TARGETS: ${PASSIVE_TARGETS:-}
       DB_CLIENT: better-sqlite3
       DB_FILE: /app/data/stresslab.db
       RUNS_DIR: /app/data/runs
+      AI_PROVIDER: ${AI_PROVIDER:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-}
+      AWS_REGION: ${AWS_REGION:-${AWS_DEFAULT_REGION:-}}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      BEDROCK_MODEL_ID: ${BEDROCK_MODEL_ID:-}
     volumes:
       - ./data:/app/data
+      - zap-auth:/zap-auth:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
+  zap:
+    user: root
+    image: ghcr.io/zaproxy/zaproxy:stable
+    mem_limit: ${ZAP_MEMORY_LIMIT:-1g}
+    cpus: ${ZAP_CPU_LIMIT:-1}
+    pids_limit: 256
+    volumes:
+      - zap-auth:/zap-auth
+    command:
+      - sh
+      - -ec
+      - |
+        umask 077
+        cat /proc/sys/kernel/random/uuid > /zap-auth/key
+        exec runuser -u zap -- zap.sh -Xmx512m -daemon -host 0.0.0.0 -port 8080 -config mode=safe -config api.key=$$(cat /zap-auth/key) -config api.addrs.addr.name=.* -config api.addrs.addr.regex=true
   k6:
+    mem_limit: ${K6_MEMORY_LIMIT:-512m}
+    cpus: ${K6_CPU_LIMIT:-1}
     image: grafana/k6:latest
     profiles: ["stress"]
     depends_on:
@@ -22,3 +57,6 @@ services:
     environment:
       BASE_URL: http://app:3000/api/health
     command: run /scripts/smoke.js
+
+volumes:
+  zap-auth:

@@ -5,15 +5,15 @@
     "type": "module",
     "description": "Monolith for designing and running k6 stress tests.",
     "scripts": {
-        "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+        "dev": "concurrently \"pnpm run dev:api\" \"pnpm run dev:web\"",
         "dev:api": "tsx watch server/src/index.ts",
         "dev:web": "vite --config frontend/vite.config.ts",
-        "build": "npm run build:frontend && npm run build:server",
+        "build": "pnpm run build:frontend && pnpm run build:server",
         "build:frontend": "vite build --config frontend/vite.config.ts",
         "build:server": "tsc -p server/tsconfig.json",
         "start": "node server/dist/index.js",
         "typecheck": "tsc -p server/tsconfig.json --noEmit && tsc -p frontend/tsconfig.json --noEmit",
-        "test": "npm run typecheck && npm run build",
+        "test": "pnpm run typecheck && pnpm run build",
         "stress": "docker run --rm -i -v \"%cd%/tests/k6:/scripts:ro\" -e BASE_URL=http://host.docker.internal:3000/api/health grafana/k6 run /scripts/smoke.js",
         "start:docker": "docker compose up --build"
     },
@@ -44,10 +44,5 @@
         "tsx": "^4.20.5",
         "typescript": "^5.9.2",
         "vite": "^7.1.3"
-    },
-    "pnpm": {
-        "onlyBuiltDependencies": [
-            "better-sqlite3"
-        ]
     }
 }

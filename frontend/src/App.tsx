@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./lib/api";
 import type { Scenario, ScenarioInput } from "./lib/types";
 import { useHealth } from "./hooks/useHealth";
@@ -8,10 +8,10 @@ import { useRunStream } from "./hooks/useRunStream";
 import { useScenarios } from "./hooks/useScenarios";
 import { useToast } from "./hooks/useToast";
 import { AppShell, type View } from "./components/layout/AppShell";
-import { DashboardPage } from "./pages/DashboardPage";
-import { HistoryPage } from "./pages/HistoryPage";
-import { ScenariosPage } from "./pages/ScenariosPage";
-import { SecurityPage } from "./pages/SecurityPage";
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then(m => ({default:m.DashboardPage})));
+const HistoryPage = lazy(() => import('./pages/HistoryPage').then(m => ({default:m.HistoryPage})));
+const ScenariosPage = lazy(() => import('./pages/ScenariosPage').then(m => ({default:m.ScenariosPage})));
+const SecurityPage = lazy(() => import('./pages/SecurityPage').then(m => ({default:m.SecurityPage})));
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Error inesperado";
@@ -130,6 +130,7 @@ export default function App() {
 
   return (
     <AppShell view={view} onNavigate={setView} health={health} connected={connected} activeRun={activeRun}>
+      <Suspense fallback={<p role="status">Cargando vista…</p>}>
       {view === "dashboard" ? (
         <DashboardPage
           scenarios={scenarios}
@@ -182,6 +183,7 @@ export default function App() {
           onToast={pushToast}
         />
       ) : null}
+      </Suspense>
     </AppShell>
   );
 }

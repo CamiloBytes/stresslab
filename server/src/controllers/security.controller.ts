@@ -14,10 +14,10 @@ import {
 } from "../services/security/normalizer.js";
 import { securityRepository } from "../services/security/repository.js";
 import {
-  aiAvailable,
   analyzeAssessment,
   analyzeFinding,
-} from "../services/ai/bedrock.service.js";
+} from "../services/ai/analysis.js";
+import { getAiStatus } from "../services/ai/provider.js";
 import { buildSecurityReportPdf } from "../services/security/report.service.js";
 
 const listQuerySchema = z.object({
@@ -36,7 +36,8 @@ function parseBoolean(value: unknown): boolean {
 export async function listAssessments(request: Request, response: Response): Promise<void> {
   const query = listQuerySchema.parse(request.query);
   const assessments = await securityRepository.listAssessments(query.projectId);
-  response.json({ assessments, aiAvailable: aiAvailable() });
+  const ai = getAiStatus();
+  response.json({ assessments, aiAvailable: ai.configured, ai });
 }
 
 export async function getAssessment(request: Request, response: Response): Promise<void> {
@@ -97,6 +98,18 @@ export async function reviewFinding(request: Request, response: Response): Promi
   response.json(updated);
 }
 
+const manualSchema = z.object({projectId:z.string().min(1).max(60), title:z.string().trim().min(1).max(120), targetUrl:z.url().regex(/^https?:\/\//i).max(2000), severity:z.enum(['info','low','medium','high','critical']), method:z.string().max(10), evidence:z.string().trim().min(1).max(8000), solution:z.string().max(4000)});
+export async function manualFinding(request:Request,response:Response) {
+  const data = manualSchema.parse(request.body);
+  const project = await projectRepository.get(data.projectId);
+  if (!project) throw new HttpError(404,'Proyecto no encontrado');
+  assertScopeAllows(project,data.targetUrl);
+  const id=crypto.randomUUID();
+  const fingerprint=reportFingerprint({alerts:[{pluginid:'manual',alert:data.title,instances:[{uri:data.targetUrl,method:data.method}]}]});
+  const result=await securityRepository.createAssessment({id,projectId:project.id,name:data.title,targetUrl:data.targetUrl,environment:project.environment,source:'manual',status:'imported',findingCount:1,severitySummary:emptySummary(),scopeKey:scopeKeyFor(data.targetUrl,project.environment),reportFingerprint:id,createdAt:new Date().toISOString()},[{fingerprint,ruleId:'manual',title:data.title,url:data.targetUrl,method:data.method || null,parameter:null,evidence:data.evidence,scannerSolution:data.solution || null,reference:null,scannerConfidence:null,severity:data.severity}]);
+  response.status(201).json(result);
+}
+
 export async function analyzeAssessmentHandler(request: Request, response: Response): Promise<void> {
   const assessment = await securityRepository.getAssessment(String(request.params.id));
   if (!assessment) throw new HttpError(404, "Evaluación no encontrada");
@@ -111,16 +124,13 @@ export async function analyzeAssessmentHandler(request: Request, response: Respo
   await securityRepository.setAssessmentStatus(assessment.id, "analyzing");
 
   try {
-    const perFinding = await Promise.all(
-      findings.slice(0, 60).map(async (finding) => {
-        const analysis = await analyzeFinding(finding, project, assessment);
-        await securityRepository.saveFindingAiAnalysis(finding.id, analysis);
-        return finding.id;
-      }),
-    );
-
-    const refreshed = await securityRepository.listFindings(assessment.id);
-    const analyzedFindings = refreshed.filter((finding) => perFinding.includes(finding.id));
+    const analyzedFindings = [];
+    const pending = findings.slice(0,60);
+    for(let i=0;i<pending.length;i+=2){
+      const batch = await Promise.all(pending.slice(i,i+2).map(async finding=>({...finding,aiAnalysis:await analyzeFinding(finding,project,assessment)})));
+      await securityRepository.saveAnalysisBatch(batch);
+      analyzedFindings.push(...batch);
+    }
     const summary = await analyzeAssessment(assessment, analyzedFindings, project);
 
     await securityRepository.saveAiAnalysis(assessment.id, summary);
