@@ -27,6 +27,8 @@ export const env = {
   dbName: process.env.DB_NAME ?? "stresslab",
   runsDir: process.env.RUNS_DIR ?? "data/runs",
   k6DockerImage: process.env.K6_DOCKER_IMAGE ?? "grafana/k6",
+  awsRegion: process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION ?? "",
+  awsAccessKeyId: process.env.AWS_ACCESS_KEY_ID ?? "",
+  awsSecretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? "",
+  bedrockModelId: process.env.BEDROCK_MODEL_ID ?? "",
 } as const;
-
-export type Env = typeof env;

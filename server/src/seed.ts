@@ -25,6 +25,7 @@ const EXAMPLES: Array<Omit<Scenario, "createdAt" | "updatedAt">> = [
     insecureTls: false,
     expectedStatus: 200,
     thresholds: { p95Ms: 500, p99Ms: 1000, maxErrorRate: 0.01 },
+    projectId: null,
   },
   {
     id: "seed-web-home",
@@ -45,6 +46,7 @@ const EXAMPLES: Array<Omit<Scenario, "createdAt" | "updatedAt">> = [
     insecureTls: false,
     expectedStatus: 200,
     thresholds: { p95Ms: 800, p99Ms: null, maxErrorRate: 0.05 },
+    projectId: null,
   },
 ];
 

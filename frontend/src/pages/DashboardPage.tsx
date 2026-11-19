@@ -203,7 +203,7 @@ export function DashboardPage({
                           ? formatLatency(live.avgLatencyMs)
                           : "—"}
                     </span>
-                    <span className={(run.summary?.errorRate ?? (run.id === activeRun?.id ? live?.errorRate : 0)) > 0.01 ? "text-rose" : "text-mint"}>
+                    <span className={((run.summary?.errorRate ?? (run.id === activeRun?.id ? live?.errorRate : undefined)) ?? 0) > 0.01 ? "text-rose" : "text-mint"}>
                       {run.summary
                         ? formatPercent(run.summary.errorRate)
                         : run.id === activeRun?.id && live

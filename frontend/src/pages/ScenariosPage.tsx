@@ -9,6 +9,7 @@ import { Panel } from "../components/ui/Panel";
 
 interface ScenariosPageProps {
   scenarios: Scenario[];
+  projects: Array<{ id: string; name: string }>;
   loading: boolean;
   busy: boolean;
   onCreate: (input: ScenarioInput) => Promise<void>;
@@ -17,7 +18,7 @@ interface ScenariosPageProps {
   onRun: (scenario: Scenario) => void;
 }
 
-export function ScenariosPage({ scenarios, loading, busy, onCreate, onUpdate, onDelete, onRun }: ScenariosPageProps) {
+export function ScenariosPage({ scenarios, projects, loading, busy, onCreate, onUpdate, onDelete, onRun }: ScenariosPageProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Scenario | null>(null);
   const [deleting, setDeleting] = useState<Scenario | null>(null);
@@ -83,6 +84,7 @@ export function ScenariosPage({ scenarios, loading, busy, onCreate, onUpdate, on
       <ScenarioForm
         open={formOpen}
         initial={editing}
+        projects={projects}
         onClose={() => setFormOpen(false)}
         onSubmit={editing ? (input) => onUpdate(editing.id, input) : onCreate}
       />

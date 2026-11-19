@@ -274,6 +274,7 @@ class RunService {
       id: runId,
       scenarioId: scenario.id,
       scenarioName: scenario.name,
+      projectId: scenario.projectId,
       startedAt: new Date().toISOString(),
     });
 

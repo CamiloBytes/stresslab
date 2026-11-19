@@ -128,3 +128,23 @@ pnpm stress       # smoke test vía Docker contra /api/health
 | GET | `/api/runs/:id` | Detalle de corrida |
 | GET | `/api/runs/:id/report` | Descargar informe PDF explicado |
 | GET | `/api/runs/stream` | SSE: `status`, `metrics`, `log` |
+| GET/POST | `/api/projects` | Listar / crear proyectos |
+| GET/PUT/DELETE | `/api/projects/:id` | Leer / actualizar / eliminar proyecto |
+| GET/POST | `/api/security/assessments` | Listar (`?projectId=`) / importar reporte ZAP |
+| GET | `/api/security/assessments/:id` | Evaluación + hallazgos |
+| POST | `/api/security/assessments/:id/analyze` | Análisis IA (Amazon Bedrock) |
+| GET | `/api/security/assessments/compare?from=&to=` | Comparar dos evaluaciones |
+| GET | `/api/security/assessments/:id/report` | Informe PDF de seguridad (`?withRun=true` incluye rendimiento) |
+| PATCH | `/api/security/findings/:id` | Revisión manual (`status`, `reviewNote`) |
+
+## Módulo de evaluación de seguridad
+
+StressLab incluye un módulo de **Automated Security Assessment** (no sustituye un pentest profesional):
+
+- **Proyectos**: agrupan escenarios k6 y evaluaciones de seguridad; pueden declarar un *alcance* de URLs autorizadas y rechazan reportes fuera de ese alcance (403).
+- **Importación ZAP**: pega o carga el reporte JSON de OWASP ZAP. Se valida con Zod, se normaliza (severidad, endpoint, parámetro, evidencia) y se deduplica por huella del reporte (409 si ya fue importado).
+- **Revisión manual**: cada hallazgo tiene estado propio (`pendiente`, `confirmada`, `descartada`, `remediada`) y nota de revisión. La severidad del escáner y el estado de revisión son campos separados.
+- **Análisis IA (opcional)**: con `BEDROCK_MODEL_ID` y credenciales AWS, Amazon Bedrock genera impacto, recomendación y confianza por hallazgo más un resumen ejecutivo. La IA no cambia estados de revisión ni confirma vulnerabilidades. Sin credenciales, el resto del módulo sigue funcionando.
+- **Comparación**: dos evaluaciones del mismo proyecto se cruzan por identidad estable (regla + método + endpoint + parámetro) en *persistentes*, *nuevos* y *no observados*. «No observado» no equivale a «corregido».
+- **Informes**: PDF con severidades, hallazgos, análisis IA y, opcionalmente, la última corrida k6 del proyecto.
+

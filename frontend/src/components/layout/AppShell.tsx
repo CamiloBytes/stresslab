@@ -3,7 +3,7 @@ import type { Health, Run } from "../../lib/types";
 import { statusLabel } from "../../lib/format";
 import { Badge } from "../ui/Badge";
 
-export type View = "dashboard" | "scenarios" | "history";
+export type View = "dashboard" | "scenarios" | "history" | "security";
 
 interface NavItem {
   view: View;
@@ -40,6 +40,16 @@ const NAV_ITEMS: NavItem[] = [
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4" aria-hidden="true">
         <circle cx="12" cy="12" r="8.5" />
         <path d="M12 7.5V12l3 2" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    view: "security",
+    label: "Seguridad",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4" aria-hidden="true">
+        <path d="M12 3.5 5 6.2v5.1c0 4.2 2.9 7.4 7 9.2 4.1-1.8 7-5 7-9.2V6.2L12 3.5Z" strokeLinejoin="round" />
+        <path d="m9 12 2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
   },

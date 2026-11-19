@@ -1,4 +1,17 @@
-import type { ApiError, Health, Run, Scenario, ScenarioInput } from "./types";
+import type {
+  ApiError,
+  AssessmentComparison,
+  AssessmentImportInput,
+  FindingStatus,
+  Health,
+  Project,
+  ProjectInput,
+  Run,
+  Scenario,
+  ScenarioInput,
+  SecurityAssessment,
+  SecurityFinding,
+} from "./types";
 
 export class ApiRequestError extends Error {
   readonly status: number;
@@ -52,4 +65,38 @@ export const api = {
     request<Run>("/api/runs", { method: "POST", body: JSON.stringify({ scenarioId }) }),
   stopRun: () => request<Run>("/api/runs/stop", { method: "POST" }),
   getActiveRun: () => request<{ run: Run; metrics: unknown } | null>("/api/runs/active"),
+
+  listProjects: () => request<Project[]>("/api/projects"),
+  createProject: (input: ProjectInput) =>
+    request<Project>("/api/projects", { method: "POST", body: JSON.stringify(input) }),
+  updateProject: (id: string, input: ProjectInput) =>
+    request<Project>(`/api/projects/${id}`, { method: "PUT", body: JSON.stringify(input) }),
+  deleteProject: (id: string) => request<void>(`/api/projects/${id}`, { method: "DELETE" }),
+
+  listAssessments: (projectId?: string) =>
+    request<{ assessments: SecurityAssessment[]; aiAvailable: boolean }>(
+      `/api/security/assessments${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ""}`,
+    ),
+  getAssessment: (id: string) =>
+    request<{ assessment: SecurityAssessment; findings: SecurityFinding[] }>(
+      `/api/security/assessments/${id}`,
+    ),
+  importAssessment: (input: AssessmentImportInput) =>
+    request<SecurityAssessment>("/api/security/assessments", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  reviewFinding: (id: string, input: { status?: FindingStatus; reviewNote?: string | null }) =>
+    request<SecurityFinding>(`/api/security/findings/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
+  analyzeAssessment: (id: string) =>
+    request<SecurityAssessment>(`/api/security/assessments/${id}/analyze`, { method: "POST" }),
+  compareAssessments: (from: string, to: string) =>
+    request<AssessmentComparison>(
+      `/api/security/assessments/compare?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+    ),
+  assessmentReportUrl: (id: string, withRun = false) =>
+    `/api/security/assessments/${id}/report${withRun ? "?withRun=true" : ""}`,
 };

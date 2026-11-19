@@ -1,0 +1,39 @@
+{
+  "@generated": "2026-11-18T10:00:00.000+00:00",
+  "@version": "2.16.1",
+  "site": [
+    {
+      "name": "https://api.ejemplo.com",
+      "alerts": [
+        {
+          "pluginid": "40018",
+          "alert": "SQL Injection",
+          "riskcode": "3",
+          "confidence": "2",
+          "cweid": "89",
+          "desc": "SQL injection may be possible.",
+          "instances": [
+            {
+              "uri": "https://api.ejemplo.com/api/users?id=10",
+              "method": "GET",
+              "param": "id",
+              "evidence": "' OR '1'='1"
+            }
+          ],
+          "solution": "Use parameterized queries.",
+          "reference": "https://owasp.org/www-community/attacks/SQL_Injection"
+        },
+        {
+          "pluginid": "10038",
+          "alert": "Content Security Policy (CSP) Header Not Set",
+          "riskcode": "1",
+          "confidence": "2",
+          "instances": [
+            { "uri": "https://api.ejemplo.com/", "method": "GET" }
+          ],
+          "solution": "Set a CSP header."
+        }
+      ]
+    }
+  ]
+}

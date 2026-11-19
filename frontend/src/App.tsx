@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./lib/api";
 import type { Scenario, ScenarioInput } from "./lib/types";
 import { useHealth } from "./hooks/useHealth";
+import { useProjects } from "./hooks/useProjects";
 import { useRunHistory } from "./hooks/useRunHistory";
 import { useRunStream } from "./hooks/useRunStream";
 import { useScenarios } from "./hooks/useScenarios";
@@ -10,6 +11,7 @@ import { AppShell, type View } from "./components/layout/AppShell";
 import { DashboardPage } from "./pages/DashboardPage";
 import { HistoryPage } from "./pages/HistoryPage";
 import { ScenariosPage } from "./pages/ScenariosPage";
+import { SecurityPage } from "./pages/SecurityPage";
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Error inesperado";
@@ -23,6 +25,7 @@ export default function App() {
 
   const health = useHealth();
   const { scenarios, loading: scenariosLoading, create, update, remove } = useScenarios();
+  const { projects, loading: projectsLoading, refresh: refreshProjects } = useProjects();
   const { connected, activeRun, live, series, logs, reset } = useRunStream();
   const { runs, refresh: refreshRuns } = useRunHistory();
   const { push: pushToast } = useToast();
@@ -152,6 +155,7 @@ export default function App() {
       {view === "scenarios" ? (
         <ScenariosPage
           scenarios={scenarios}
+          projects={projects}
           loading={scenariosLoading}
           busy={Boolean(busy)}
           onCreate={handleCreate}
@@ -167,6 +171,15 @@ export default function App() {
           loading={false}
           onRunAgain={handleRunAgain}
           runAgainDisabled={Boolean(busy)}
+        />
+      ) : null}
+
+      {view === "security" ? (
+        <SecurityPage
+          projects={projects}
+          loadingProjects={projectsLoading}
+          onProjectsChange={refreshProjects}
+          onToast={pushToast}
         />
       ) : null}
     </AppShell>

@@ -44,6 +44,7 @@ export const scenarioInputSchema = z
         maxErrorRate: z.number().min(0).max(1).nullable().default(null),
       })
       .default({ p95Ms: null, p99Ms: null, maxErrorRate: null }),
+    projectId: z.string().min(1).max(60).nullable().default(null),
   })
   .superRefine((value, ctx) => {
     if (value.loadMode === "constant-arrival-rate") {

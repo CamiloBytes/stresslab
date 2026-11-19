@@ -5,6 +5,7 @@ interface RunRow {
   id: string;
   scenarioId: string;
   scenarioName: string;
+  projectId: string | null;
   status: string;
   startedAt: string;
   endedAt: string | null;
@@ -25,6 +26,7 @@ function toRun(row: RunRow): Run {
     id: row.id,
     scenarioId: row.scenarioId,
     scenarioName: row.scenarioName,
+    projectId: row.projectId ?? null,
     status: row.status as RunStatus,
     startedAt: row.startedAt,
     endedAt: row.endedAt,
@@ -34,10 +36,19 @@ function toRun(row: RunRow): Run {
 }
 
 export class RunRepository {
-  async create(input: Pick<Run, "id" | "scenarioId" | "scenarioName" | "startedAt">): Promise<Run> {
-    const row = { ...input, status: "running", endedAt: null, summary: null, error: null };
+  async create(
+    input: Pick<Run, "id" | "scenarioId" | "scenarioName" | "startedAt"> & { projectId?: string | null },
+  ): Promise<Run> {
+    const row = {
+      ...input,
+      projectId: input.projectId ?? null,
+      status: "running",
+      endedAt: null,
+      summary: null,
+      error: null,
+    };
     await db("runs").insert(row);
-    return { ...input, status: "running", endedAt: null, summary: null, error: null };
+    return { ...input, projectId: input.projectId ?? null, status: "running", endedAt: null, summary: null, error: null };
   }
 
   async update(

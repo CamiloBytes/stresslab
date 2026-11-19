@@ -18,6 +18,7 @@
         "start:docker": "docker compose up --build"
     },
     "dependencies": {
+        "@aws-sdk/client-bedrock-runtime": "^3.1171.0",
         "@tailwindcss/vite": "^4.3.5",
         "better-sqlite3": "^13.2.0",
         "express": "^5.1.0",

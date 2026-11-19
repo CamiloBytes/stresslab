@@ -20,6 +20,7 @@ interface ScenarioRow {
   insecureTls: number;
   expectedStatus: number;
   thresholds: string;
+  projectId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -57,6 +58,7 @@ function toScenario(row: ScenarioRow): Scenario {
       p99Ms: null,
       maxErrorRate: null,
     }),
+    projectId: row.projectId ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

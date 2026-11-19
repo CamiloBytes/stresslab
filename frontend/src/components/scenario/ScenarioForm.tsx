@@ -5,6 +5,7 @@ import { Button } from "../ui/Button";
 import { Modal } from "../ui/Modal";
 import {
   SegmentedControl,
+  SelectField,
   TextAreaField,
   TextField,
   Toggle,
@@ -35,6 +36,7 @@ interface FormState {
   p95Ms: string;
   p99Ms: string;
   maxErrorRate: string;
+  projectId: string;
 }
 
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"];
@@ -64,6 +66,7 @@ function emptyForm(): FormState {
     p95Ms: "",
     p99Ms: "",
     maxErrorRate: "",
+    projectId: "",
   };
 }
 
@@ -91,6 +94,7 @@ function toFormState(scenario: Scenario): FormState {
       scenario.thresholds.maxErrorRate !== null && scenario.thresholds.maxErrorRate !== undefined
         ? String(scenario.thresholds.maxErrorRate)
         : "",
+    projectId: scenario.projectId ?? "",
   };
 }
 
@@ -152,12 +156,14 @@ function toInput(form: FormState): ScenarioInput {
       p99Ms: form.p99Ms.trim() ? Number(form.p99Ms) : null,
       maxErrorRate: form.maxErrorRate.trim() ? Number(form.maxErrorRate) : null,
     },
+    projectId: form.projectId.trim() ? form.projectId.trim() : null,
   };
 }
 
 interface ScenarioFormProps {
   open: boolean;
   initial: Scenario | null;
+  projects: Array<{ id: string; name: string }>;
   onClose: () => void;
   onSubmit: (input: ScenarioInput) => Promise<void>;
 }
@@ -170,7 +176,7 @@ function SectionTitle({ children }: { children: string }) {
   );
 }
 
-export function ScenarioForm({ open, initial, onClose, onSubmit }: ScenarioFormProps) {
+export function ScenarioForm({ open, initial, projects, onClose, onSubmit }: ScenarioFormProps) {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverIssues, setServerIssues] = useState<string[]>([]);
@@ -294,6 +300,19 @@ export function ScenarioForm({ open, initial, onClose, onSubmit }: ScenarioFormP
           onChange={(event) => patch("expectedStatus", event.target.value)}
           error={errors.expectedStatus}
         />
+
+        <div className="sm:col-span-2">
+          <SelectField
+            label="Proyecto"
+            value={form.projectId}
+            onChange={(event) => patch("projectId", event.target.value)}
+            options={[
+              { value: "", label: "Sin proyecto" },
+              ...projects.map((project) => ({ value: project.id, label: project.name })),
+            ]}
+            hint="Permite vincular corridas con evaluaciones de seguridad"
+          />
+        </div>
 
         <SectionTitle>Modelo de carga</SectionTitle>
 
