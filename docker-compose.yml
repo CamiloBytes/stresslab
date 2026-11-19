@@ -32,7 +32,7 @@ services:
       - "host.docker.internal:host-gateway"
   zap:
     user: root
-    image: ghcr.io/zaproxy/zaproxy:stable
+    image: ghcr.io/zaproxy/zaproxy:bare
     mem_limit: ${ZAP_MEMORY_LIMIT:-1g}
     cpus: ${ZAP_CPU_LIMIT:-1}
     pids_limit: 256
@@ -44,7 +44,8 @@ services:
       - |
         umask 077
         cat /proc/sys/kernel/random/uuid > /zap-auth/key
-        exec runuser -u zap -- zap.sh -Xmx512m -daemon -host 0.0.0.0 -port 8080 -config mode=safe -config api.key=$$(cat /zap-auth/key) -config api.addrs.addr.name=.* -config api.addrs.addr.regex=true
+        export ZAP_KEY=$$(cat /zap-auth/key)
+        exec su -s /bin/sh -c 'exec /zap/zap.sh -Xmx512m -daemon -host 0.0.0.0 -port 8080 -config mode=safe -config "api.key=$$ZAP_KEY" -config "api.addrs.addr.name=.*" -config api.addrs.addr.regex=true' zap
   k6:
     mem_limit: ${K6_MEMORY_LIMIT:-512m}
     cpus: ${K6_CPU_LIMIT:-1}
