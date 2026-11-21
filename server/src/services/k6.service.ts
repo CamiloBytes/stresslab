@@ -116,7 +116,8 @@ ${stages}
   },`;
 }
 
-export function generateScript(scenario: Scenario): string {
+import { evaluate, labels, type Contract } from './contracts.js';
+export function generateScript(scenario: Scenario,contract?:Contract|null): string {
   const headers = JSON.stringify(scenario.headers);
   const body = scenario.body ? JSON.stringify(scenario.body) : "null";
   const expected = scenario.expectedStatus;
@@ -124,6 +125,10 @@ export function generateScript(scenario: Scenario): string {
 
   return `import http from 'k6/http';
 import { check, sleep } from 'k6';
+${contract ? `import { Counter } from 'k6/metrics';
+const contract=${JSON.stringify(contract)};
+const evaluate=${evaluate.toString()};
+const counts=Array.from({length:${labels(contract).length+1}},(_,i)=>Object.fromEntries(['pass','fail','skip'].map(outcome=>[outcome,new Counter('contract_'+i+'_'+outcome)])));` : ''}
 
 export const options = {
 ${buildScenarioBlock(scenario)}
@@ -152,6 +157,11 @@ export default function () {
     'status esperado': (r) => r.status === EXPECTED_STATUS,
   });
 
+  ${contract ? `if(__ITER % contract.sampleEvery === 0){
+    const outcomes=evaluate(contract,response.status,response.headers['Content-Type'] || '',response.body);
+    outcomes.push(outcomes.includes('fail')?'fail':outcomes.includes('skip')?'skip':'pass');
+    outcomes.forEach((outcome,i)=>counts[i][outcome].add(1));
+  }` : ''}
   if (THINK_TIME > 0) {
     sleep(THINK_TIME);
   }

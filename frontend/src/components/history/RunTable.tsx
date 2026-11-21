@@ -1,4 +1,5 @@
 import type { Run } from "../../lib/types";
+import { RunAnalysis } from './RunAnalysis';
 import { formatDateTime, formatElapsed, formatLatency, formatNumber, formatPercent, statusLabel } from "../../lib/format";
 import { Badge, type BadgeTone } from "../ui/Badge";
 import { Button } from "../ui/Button";
@@ -179,6 +180,8 @@ export function RunDetail({ run, onRunAgain, runAgainDisabled = false }: RunDeta
         <p className="text-xs text-sky/45">Sin resumen disponible{run.status === "running" ? " — la corrida sigue en curso" : ""}.</p>
       )}
 
+      {summary?.contract && <div className="mt-3 min-w-0 break-words text-xs"><strong>Contrato v{summary.contract.version} · muestra 1/{summary.contract.sampleEvery}</strong>{summary.contract.counts.map((r,i)=><p key={i}>{r.label}: {r.pass} cumplen · {r.fail} fallan · {r.skip} no evaluadas</p>)}</div>}
+      <RunAnalysis key={run.id} run={run}/>
       <p className="mt-4 font-mono text-[10px] text-sky/35">
         iniciado {formatDateTime(run.startedAt)}
         {run.endedAt ? ` · finalizado ${formatDateTime(run.endedAt)}` : ""}

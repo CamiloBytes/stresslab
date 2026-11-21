@@ -191,6 +191,12 @@ export function AssessmentDetail({
         ))}
       </div>
 
+      {assessment.responseContract && <Panel title="Comprobación de la respuesta">
+        {assessment.responseContract.rules && <div className="mb-3 min-w-0 break-words text-xs"><strong>Contrato v{assessment.responseContract.version}</strong>{assessment.responseContract.rules.map((r,i)=><p key={i}>{r.label}: {{pass:'cumple',fail:'no cumple',skip:'no evaluada'}[r.outcome]}</p>)}</div>}
+        <Badge tone={assessment.responseContract.matches ? 'success' : 'warning'}>{assessment.responseContract.matches ? 'Coincide con lo esperado' : 'Difiere de lo esperado'}</Badge>
+        <p className="mt-2 text-sm">Esperado: HTTP {assessment.responseContract.expected.status} · {assessment.responseContract.expected.mediaType ?? 'Sin requisito de Content-Type'}</p>
+        <p className="text-sm">Observado: HTTP {assessment.responseContract.observed.status} · {assessment.responseContract.observed.mediaType ?? 'Sin Content-Type'}</p>
+      </Panel>}
       {assessment.aiAnalysis ? (
         <Panel
           title="Análisis asistido por IA"
@@ -199,19 +205,19 @@ export function AssessmentDetail({
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone={severityTone(assessment.aiAnalysis.riskLevel)}>
-                Riesgo: {SEVERITY_LABEL[assessment.aiAnalysis.riskLevel]}
+                Riesgo: {SEVERITY_LABEL[assessment.aiAnalysis.riskLevel] ?? assessment.aiAnalysis.riskLevel}
               </Badge>
               <span className="font-mono text-[10px] text-sky/40">
                 {formatDateTime(assessment.aiAnalysis.generatedAt)}
               </span>
             </div>
-            <p className="text-sm text-sky/80">{assessment.aiAnalysis.summary}</p>
-            <p className="text-sm leading-relaxed text-sky/65">{assessment.aiAnalysis.executiveSummary}</p>
-            {assessment.aiAnalysis.technicalRecommendations.length > 0 ? (
+            <p className="break-words text-sm text-sky/80">{assessment.aiAnalysis.summary}</p>
+            <p className="break-words text-sm leading-relaxed text-sky/65">{assessment.aiAnalysis.executiveSummary}</p>
+            {Array.isArray(assessment.aiAnalysis.technicalRecommendations) && assessment.aiAnalysis.technicalRecommendations.length > 0 ? (
               <ul className="flex flex-col gap-1.5">
                 {assessment.aiAnalysis.technicalRecommendations.map((item) => (
-                  <li key={item} className="flex gap-2 text-xs text-sky/70">
-                    <span className="text-mint">›</span>
+                  <li key={item} className="flex gap-2 break-words text-xs text-sky/70">
+                    <span className="shrink-0 text-mint">›</span>
                     {item}
                   </li>
                 ))}
@@ -225,7 +231,8 @@ export function AssessmentDetail({
         </Panel>
       ) : null}
 
-      <div className="grid gap-5 xl:grid-cols-[1.5fr_1fr]">
+      <div className="grid min-w-0 gap-5 xl:grid-cols-[1.5fr_1fr]">
+        <div className="min-w-0">
         <Panel
           title={`Hallazgos (${filtered.length}${filtered.length !== findings.length ? ` de ${findings.length}` : ""})`}
           bodyClassName="p-0"
@@ -319,8 +326,9 @@ export function AssessmentDetail({
             </div>
           )}
         </Panel>
+        </div>
 
-        <div className="xl:sticky xl:top-20 xl:self-start">
+        <div className="min-w-0 xl:sticky xl:top-20 xl:self-start">
           {selected ? (
             <FindingDetail finding={selected} onChange={onFindingChange} />
           ) : (
@@ -368,8 +376,8 @@ function FindingDetail({ finding, onChange }: { finding: SecurityFinding; onChan
       title={<span className="truncate text-sm font-semibold text-sky/90">{finding.title}</span>}
       actions={<Badge tone={severityTone(finding.severity)}>{SEVERITY_LABEL[finding.severity]}</Badge>}
     >
-      <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-3">
+      <div className="flex min-w-0 flex-col gap-4">
+        <div className="grid min-w-0 grid-cols-2 gap-3">
           <Meta label="Regla" value={finding.ruleId} />
           <Meta
             label="Confianza del escáner"
@@ -384,7 +392,7 @@ function FindingDetail({ finding, onChange }: { finding: SecurityFinding; onChan
         </div>
 
         {finding.url ? (
-          <div className="rounded-lg border border-line bg-hull/50 px-3 py-2">
+          <div className="min-w-0 rounded-lg border border-line bg-hull/50 px-3 py-2">
             <p className="text-[10px] tracking-wide text-sky/40 uppercase">Endpoint</p>
             <p className="mt-1 break-all font-mono text-xs text-sky/75">{finding.url}</p>
           </div>
@@ -407,10 +415,10 @@ function FindingDetail({ finding, onChange }: { finding: SecurityFinding; onChan
                 confianza {Math.round(finding.aiAnalysis.confidence * 100)}%
               </span>
             </div>
-            <p className="text-xs leading-relaxed text-sky/75">{finding.aiAnalysis.impact}</p>
-            <p className="mt-2 text-xs leading-relaxed text-mint/90">{finding.aiAnalysis.recommendation}</p>
+            <p className="break-words text-xs leading-relaxed text-sky/75">{finding.aiAnalysis.impact}</p>
+            <p className="mt-2 break-words text-xs leading-relaxed text-mint/90">{finding.aiAnalysis.recommendation}</p>
             {finding.aiAnalysis.codeExample ? (
-              <pre className="mt-2 overflow-x-auto rounded-md bg-void/60 p-2 font-mono text-[10px] leading-relaxed text-sky/70 scrollbar-slim">
+              <pre className="mt-2 max-w-full overflow-x-auto whitespace-pre-wrap break-words rounded-md bg-void/60 p-2 font-mono text-[10px] leading-relaxed text-sky/70 scrollbar-slim">
                 {finding.aiAnalysis.codeExample}
               </pre>
             ) : null}
@@ -426,7 +434,7 @@ function FindingDetail({ finding, onChange }: { finding: SecurityFinding; onChan
         ) : null}
 
         {finding.reference ? (
-          <p className="break-all text-[11px] text-sky/45">Referencia: {finding.reference}</p>
+          <p className="min-w-0 break-all text-[11px] text-sky/45">Referencia: {finding.reference}</p>
         ) : null}
 
         <div className="border-t border-line pt-3">
@@ -445,7 +453,9 @@ function FindingDetail({ finding, onChange }: { finding: SecurityFinding; onChan
             }))}
             hint="La revisión manual es tuya: la IA no cambia este estado."
           />
-          <div className="mt-3">
+            <details key={finding.id} className="mt-3 rounded-lg border border-line p-3">
+              <summary className="cursor-pointer text-sm font-medium text-cyan-glow">{finding.reviewNote ? 'Ver o editar nota' : 'Añadir nota de revisión'}</summary>
+            <div className="mt-3">
             <TextAreaField
               label="Nota de revisión"
               rows={3}
@@ -463,8 +473,9 @@ function FindingDetail({ finding, onChange }: { finding: SecurityFinding; onChan
             >
               Guardar nota
             </Button>
-            {error ? <span className="text-xs text-rose">{error}</span> : null}
-          </div>
+           </div>
+            </details>
+            {error ? <span role="alert" className="text-xs text-rose">{error}</span> : null}
         </div>
       </div>
     </Panel>

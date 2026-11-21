@@ -99,5 +99,11 @@ export function useRunStream() {
     setActiveRun(null);
   }, []);
 
-  return { connected, activeRun, live, series, logs, reset };
+  const clearTelemetry = useCallback(() => {
+    setSeries([]);
+    setLogs([]);
+    setLive(null);
+  }, []);
+
+  return { connected, activeRun, live, series, logs, reset, clearTelemetry };
 }

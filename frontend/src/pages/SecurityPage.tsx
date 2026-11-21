@@ -11,6 +11,7 @@ import { formatDateTime } from "../lib/format";
 import { AssessmentDetail, severityTone } from "../components/security/AssessmentDetail";
 import { ComparePanel } from "../components/security/ComparePanel";
 import { ImportModal } from "../components/security/ImportModal";
+import { ContractEditor } from '../components/security/ContractEditor';
 import { Badge, type BadgeTone } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
@@ -52,6 +53,8 @@ export function SecurityPage({ projects, loadingProjects, onProjectsChange, onTo
   } | null>(null);
   const [busy, setBusy] = useState(false);
   const [target,setTarget] = useState('');
+  const [expectedStatus,setExpectedStatus] = useState('');
+  const [expectedType,setExpectedType] = useState('');
   const [importOpen, setImportOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const [projectModalOpen, setProjectModalOpen] = useState(false);
@@ -229,11 +232,16 @@ export function SecurityPage({ projects, loadingProjects, onProjectsChange, onTo
         </div>
       </div>
 
-      {aiMessage && <p className="text-xs text-sky/75">{aiMessage}</p>}
+      {aiMessage && <p className="break-words text-xs text-sky/75">{aiMessage}</p>}
+      {currentProject && <ContractEditor key={currentProject.id} projectId={currentProject.id} initialUrl={currentProject.scope[0]??'https://localhost/'}/>}
       {currentProject && hasScope && <Panel title="Revisión pasiva con ZAP">
         <p className="mb-3 text-xs text-sky/70">Revisa una respuesta HTTPS sin seguir enlaces. La URL debe estar autorizada en PASSIVE_TARGETS del servidor.</p>
         <SelectField label="URL del proyecto" value={currentProject.scope.includes(target)?target:currentProject.scope[0]} onChange={e=>setTarget(e.target.value)} options={currentProject.scope.map(value=>({value,label:value}))}/>
-        <Button variant="primary" loading={busy} onClick={async()=>{setBusy(true);try{const a=await api.scan(currentProject.id,currentProject.scope.includes(target)?target:currentProject.scope[0]);await loadAssessments();await openDetail(a);}catch(e){onToast(e instanceof Error?e.message:'No se pudo revisar','error');}finally{setBusy(false);}}}>{busy?'Revisando respuesta…':'Revisar objetivo'}</Button>
+        <p className="mt-2 text-xs text-sky/70">Deja vacío el código para usar las reglas guardadas de la ruta. Un código escrito aquí sustituye el contrato solo para esta revisión.</p><div className="my-3 grid gap-3 sm:grid-cols-2">
+          <TextField label="Código HTTP esperado (opcional)" type="number" min={100} max={599} placeholder="Ej.: 200, o 401 si requiere sesión" value={expectedStatus} onChange={e=>setExpectedStatus(e.target.value)} />
+          <SelectField label="Content-Type esperado" disabled={!expectedStatus} value={expectedType} onChange={e=>setExpectedType(e.target.value)} options={[{value:'',label:'Sin comprobar'},...['application/json','text/html','text/plain'].map(value=>({value,label:value}))]} />
+        </div>
+        <Button variant="primary" loading={busy} disabled={!!expectedStatus && (!Number.isInteger(Number(expectedStatus)) || Number(expectedStatus)<100 || Number(expectedStatus)>599)} onClick={async()=>{setBusy(true);try{const a=await api.scan(currentProject.id,currentProject.scope.includes(target)?target:currentProject.scope[0],expectedStatus ? {status:Number(expectedStatus),mediaType:expectedType || undefined}:undefined);await loadAssessments();await openDetail(a);}catch(e){onToast(e instanceof Error?e.message:'No se pudo revisar','error');}finally{setBusy(false);}}}>{busy?'Revisando respuesta…':'Revisar objetivo'}</Button>
       </Panel>}
 
       {compareOpen ? (

@@ -28,6 +28,7 @@ interface DashboardPageProps {
   runAgainDisabled: boolean;
   onStart: () => void;
   onStop: () => void;
+  onClear: () => void;
 }
 
 export function DashboardPage({
@@ -48,6 +49,7 @@ export function DashboardPage({
   runAgainDisabled,
   onStart,
   onStop,
+  onClear,
 }: DashboardPageProps) {
   const selectedIsActive = selectedRun !== null && selectedRun.id === activeRun?.id;
   const selectedLive = selectedIsActive ? live : null;
@@ -91,19 +93,29 @@ export function DashboardPage({
         ) : null}
       </Panel>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-        <MetricCard label="RPS" value={formatRps(rps)} live={running} />
-        <MetricCard label="Latencia media" value={formatLatency(avgLatency)} live={running} />
-        <MetricCard
-          label="Errores"
-          value={formatPercent(errorRate)}
-          tone={errorTone}
-          live={running}
-          detail={showSummary ? `${formatNumber(summary?.errors ?? 0)} fallidas` : undefined}
-        />
-        <MetricCard label="VUs activos" value={formatNumber(vus)} live={running} />
-        <MetricCard label="Requests" value={formatNumber(requests)} live={running} />
-        <MetricCard label="Tiempo" value={formatElapsed(elapsed)} live={running} />
+      <div className="flex items-center justify-between gap-3">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6 flex-1">
+          <MetricCard label="RPS" value={formatRps(rps)} live={running} />
+          <MetricCard label="Latencia media" value={formatLatency(avgLatency)} live={running} />
+          <MetricCard
+            label="Errores"
+            value={formatPercent(errorRate)}
+            tone={errorTone}
+            live={running}
+            detail={showSummary ? `${formatNumber(summary?.errors ?? 0)} fallidas` : undefined}
+          />
+          <MetricCard label="VUs activos" value={formatNumber(vus)} live={running} />
+          <MetricCard label="Requests" value={formatNumber(requests)} live={running} />
+          <MetricCard label="Tiempo" value={formatElapsed(elapsed)} live={running} />
+        </div>
+        <button
+          type="button"
+          onClick={onClear}
+          title="Limpia la selección y las métricas del tablero"
+          className="shrink-0 self-start rounded-lg border border-line px-3 py-2 text-xs font-medium text-sky/70 transition-colors hover:border-rose/40 hover:bg-rose/10 hover:text-rose focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose/40"
+        >
+          Limpiar
+        </button>
       </div>
 
       <div className="grid gap-5 xl:grid-cols-2">
@@ -148,9 +160,10 @@ export function DashboardPage({
         </Panel>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-2">
+      <div className="grid min-w-0 gap-5 xl:grid-cols-2">
         <LiveConsole logs={logs} running={running} />
 
+        <div className="min-w-0">
         {selectedRun ? (
           <RunDetail run={selectedRun} onRunAgain={onRunAgain} runAgainDisabled={runAgainDisabled} />
         ) : (
@@ -162,6 +175,7 @@ export function DashboardPage({
             />
           </Panel>
         )}
+        </div>
       </div>
 
       <Panel

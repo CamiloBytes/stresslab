@@ -66,7 +66,7 @@ function positiveFindings(summary: RunSummary | null): string[] {
   if (!summary) return ["No hay métricas suficientes para confirmar aspectos positivos."];
   const findings: string[] = [];
   if (summary.errors === 0) findings.push("Todas las solicitudes terminaron sin errores registrados.");
-  if (summary.checksRate >= 1) findings.push("Las validaciones del código de respuesta fueron exitosas.");
+  if (summary.checksRate === 1) findings.push("Las validaciones del código de respuesta fueron exitosas.");
   if (summary.thresholds.length > 0 && summary.thresholds.every((threshold) => threshold.passed)) {
     findings.push("Se cumplieron todos los límites de rendimiento configurados.");
   }
@@ -181,17 +181,7 @@ export function buildRunReport(run: Run, scenario: Scenario): string {
 </html>`;
 }
 
-const PDF_COLORS = {
-  background: "#070b14",
-  panel: "#101627",
-  line: "#24344a",
-  text: "#d8f7ff",
-  muted: "#7da5b5",
-  cyan: "#00edff",
-  mint: "#abffe3",
-  rose: "#ff3bae",
-  amber: "#ffd166",
-};
+import { printColors as PDF_COLORS } from './pdf-palette.js';
 
 function pdfText(document: PDFKit.PDFDocument, text: string, color = PDF_COLORS.text, size = 10): void {
   document.fillColor(color).fontSize(size).font("Helvetica").text(text, { lineGap: 3 });
@@ -325,6 +315,11 @@ export function buildRunReportPdf(run: Run, scenario: Scenario): Promise<Buffer>
       785,
       { width: 511 },
     );
+    if(run.summary?.contract || run.aiAnalysis){
+      document.addPage();
+      if(run.summary?.contract){pdfText(document,`Contrato v${run.summary.contract.version} · muestreo 1/${run.summary.contract.sampleEvery}`);for(const row of run.summary.contract.counts)pdfText(document,`${row.label}: ${row.pass} cumplen, ${row.fail} fallan, ${row.skip} no evaluadas`);}
+      if(run.aiAnalysis){document.moveDown();pdfText(document,`Interpretación IA · ${run.aiAnalysis.model} · ${run.aiAnalysis.generatedAt}`);for(const [label,value] of [['Observaciones',run.aiAnalysis.observations],['Hipótesis',run.aiAnalysis.hypotheses],['Siguiente paso',run.aiAnalysis.nextStep]])pdfText(document,`${label}: ${value}`);}
+    }
     document.end();
   });
 }

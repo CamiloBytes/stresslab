@@ -25,6 +25,16 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    view: "security",
+    label: "Seguridad",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4" aria-hidden="true">
+        <path d="M12 3.5 5 6.2v5.1c0 4.2 2.9 7.4 7 9.2 4.1-1.8 7-5 7-9.2V6.2L12 3.5Z" strokeLinejoin="round" />
+        <path d="m9 12 2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
     view: "scenarios",
     label: "Escenarios",
     icon: (
@@ -40,16 +50,6 @@ const NAV_ITEMS: NavItem[] = [
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4" aria-hidden="true">
         <circle cx="12" cy="12" r="8.5" />
         <path d="M12 7.5V12l3 2" strokeLinecap="round" />
-      </svg>
-    ),
-  },
-  {
-    view: "security",
-    label: "Seguridad",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4" aria-hidden="true">
-        <path d="M12 3.5 5 6.2v5.1c0 4.2 2.9 7.4 7 9.2 4.1-1.8 7-5 7-9.2V6.2L12 3.5Z" strokeLinejoin="round" />
-        <path d="m9 12 2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
   },
@@ -93,8 +93,8 @@ function StatusBlock({ health, connected, activeRun }: Omit<AppShellProps, "view
 
 export function AppShell({ view, onNavigate, health, connected, activeRun, children }: AppShellProps) {
   return (
-    <div className="flex min-h-full flex-col lg:flex-row">
-      <aside className="glass z-30 flex flex-col gap-6 border-b border-line px-5 py-4 lg:sticky lg:top-0 lg:h-screen lg:w-56 lg:shrink-0 lg:border-r lg:border-b-0 lg:px-4 lg:py-6">
+    <div className="flex min-h-full min-w-0 flex-col lg:flex-row">
+      <aside className="glass z-30 flex shrink-0 flex-col gap-6 border-b border-line px-5 py-4 lg:sticky lg:top-0 lg:h-screen lg:w-56 lg:shrink-0 lg:border-r lg:border-b-0 lg:px-4 lg:py-6">
         <div className="flex items-center gap-3">
           <span className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-cyan-glow/40 bg-cyan-glow/10 font-mono text-sm font-bold text-cyan-glow glow-cyan">
             S
@@ -102,11 +102,11 @@ export function AppShell({ view, onNavigate, health, connected, activeRun, child
           </span>
           <div className="min-w-0">
             <p className="text-sm font-bold tracking-[0.2em] text-sky/90">STRESSLAB</p>
-            <p className="font-mono text-[10px] text-sky/40">consola de carga</p>
+            <p className="text-xs text-sky/65">Rendimiento y seguridad</p>
           </div>
         </div>
 
-        <nav aria-label="Principal" className="flex gap-1 lg:flex-col">
+        <nav aria-label="Principal" className="grid grid-cols-4 gap-1 border-t border-line pt-3 lg:grid-cols-1 lg:gap-2">
           {NAV_ITEMS.map((item) => {
             const active = item.view === view;
             return (
@@ -115,14 +115,14 @@ export function AppShell({ view, onNavigate, health, connected, activeRun, child
                 type="button"
                 onClick={() => onNavigate(item.view)}
                 aria-current={active ? "page" : undefined}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm transition-all duration-200 focus-visible:ring-2 focus-visible:ring-cyan-glow/60 focus-visible:outline-none lg:justify-start ${
+                className={`flex flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-cyan-glow/60 focus-visible:outline-none lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:py-3 lg:text-sm ${
                   active
                     ? "border border-cyan-glow/35 bg-cyan-glow/10 text-cyan-glow"
                     : "border border-transparent text-sky/55 hover:bg-sky/5 hover:text-sky/90"
                 }`}
               >
                 {item.icon}
-                <span className="hidden sm:inline">{item.label}</span>
+                <span>{item.label}</span>
               </button>
             );
           })}
@@ -151,7 +151,7 @@ export function AppShell({ view, onNavigate, health, connected, activeRun, child
             <StatusBlock health={health} connected={connected} activeRun={activeRun} />
           </div>
         </header>
-        <main className="flex-1 px-4 py-5 lg:px-8 lg:py-7">{children}</main>
+        <main className="min-w-0 flex-1 overflow-x-clip px-4 py-5 lg:px-8 lg:py-7">{children}</main>
       </div>
     </div>
   );

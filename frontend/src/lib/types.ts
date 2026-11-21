@@ -93,6 +93,7 @@ export interface SecurityFinding {
 }
 
 export interface SecurityAssessment {
+  responseContract?: {version?:number;rules?:{label:string;outcome:'pass'|'fail'|'skip'}[];expected:{status:number; mediaType?:string}; observed:{status:number; mediaType:string|null}; matches:boolean} | null;
   id: string;
   projectId: string;
   name: string;
@@ -143,6 +144,7 @@ export interface ThresholdResult {
 }
 
 export interface RunSummary {
+  contract?: {version:number;sampleEvery:number;minPass:number;counts:{label:string;pass:number;fail:number;skip:number}[]};
   requests: number;
   errors: number;
   errorRate: number;
@@ -151,12 +153,13 @@ export interface RunSummary {
   p99Ms: number;
   rps: number;
   iterations: number;
-  checksRate: number;
+  checksRate: number|null;
   durationSec: number;
   thresholds: ThresholdResult[];
 }
 
 export interface Run {
+  aiAnalysis?: {observations:string;hypotheses:string;nextStep:string;model:string;generatedAt:string}|null;
   id: string;
   scenarioId: string;
   scenarioName: string;

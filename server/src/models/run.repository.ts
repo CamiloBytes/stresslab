@@ -2,6 +2,7 @@ import { db } from "../config/db.js";
 import type { Run, RunStatus, RunSummary } from "./types.js";
 
 interface RunRow {
+  aiAnalysis: string|null;
   id: string;
   scenarioId: string;
   scenarioName: string;
@@ -31,11 +32,17 @@ function toRun(row: RunRow): Run {
     startedAt: row.startedAt,
     endedAt: row.endedAt,
     summary,
+    aiAnalysis:row.aiAnalysis ? JSON.parse(row.aiAnalysis) : null,
     error: row.error,
   };
 }
 
 export class RunRepository {
+  async baseline(run:Run):Promise<Run|null>{
+    if(!run.summary?.comparisonKey)return null;
+    const rows=await db<RunRow>('runs').where({scenarioId:run.scenarioId}).where('startedAt','<',run.startedAt).whereIn('status',['completed','failed']).orderBy('startedAt','desc').limit(100);
+    return rows.map(toRun).find(previous=>previous.summary?.comparisonKey===run.summary?.comparisonKey && previous.summary?.requests)??null;
+  }
   async create(
     input: Pick<Run, "id" | "scenarioId" | "scenarioName" | "startedAt"> & { projectId?: string | null },
   ): Promise<Run> {

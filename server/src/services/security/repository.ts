@@ -12,6 +12,7 @@ import type {
 import type { NormalizedFinding } from "./normalizer.js";
 
 interface AssessmentRow {
+  responseContract: string | null;
   id: string;
   projectId: string;
   name: string;
@@ -75,6 +76,7 @@ function toAssessment(row: AssessmentRow): SecurityAssessment {
     targetUrl: row.targetUrl,
     environment: row.environment,
     scopeKey: row.scopeKey,
+    responseContract: parseJson(row.responseContract,null),
     status: row.status as SecurityAssessment["status"],
     findingCount: row.findingCount,
     severitySummary: parseJson<Record<FindingSeverity, number>>(row.severitySummary, { ...EMPTY_SUMMARY }),
@@ -151,6 +153,7 @@ export class SecurityRepository {
       environment: input.environment,
       scopeKey: input.scopeKey,
       reportFingerprint: input.reportFingerprint,
+      responseContract: input.responseContract ? JSON.stringify(input.responseContract) : null,
       status: input.status,
       findingCount: findings.length,
       severitySummary: JSON.stringify(severitySummary),
@@ -196,6 +199,7 @@ export class SecurityRepository {
       status: input.status,
       findingCount: findings.length,
       severitySummary,
+      responseContract: input.responseContract ?? null,
       aiAnalysis: null,
       aiError: null,
       createdAt: now,

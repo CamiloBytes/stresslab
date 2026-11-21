@@ -5,24 +5,14 @@ import type {
   SecurityFinding,
 } from "../../models/types.js";
 
-const COLORS = {
-  background: "#070b14",
-  panel: "#101627",
-  line: "#24344a",
-  text: "#d8f7ff",
-  muted: "#7da5b5",
-  cyan: "#00edff",
-  mint: "#abffe3",
-  rose: "#ff3bae",
-  amber: "#ffd166",
-};
+import { printColors as COLORS } from '../pdf-palette.js';
 
 const SEVERITY_COLOR: Record<string, string> = {
-  critical: "#ff3bae",
-  high: "#ff6b6b",
-  medium: "#ffd166",
-  low: "#7da5b5",
-  info: "#4cc9f0",
+  critical: COLORS.rose,
+  high: '#963e20',
+  medium: COLORS.amber,
+  low: COLORS.muted,
+  info: COLORS.cyan,
 };
 
 const SEVERITY_LABEL: Record<string, string> = {
@@ -289,6 +279,7 @@ export function buildSecurityReportPdf(input: ReportInput): Promise<Buffer> {
       { width: 511 },
     );
 
+    if(assessment.responseContract){const c=assessment.responseContract;newPage();document.text('Contrato de respuesta',42,68);text(document,`HTTP esperado ${c.expected.status}; observado ${c.observed.status}. Content-Type observado: ${c.observed.mediaType??'ausente'}.`);if(c.version)text(document,`Versión ${c.version}`);for(const r of c.rules??[])text(document,`${r.label}: ${{pass:'cumple',fail:'no cumple',skip:'no evaluada'}[r.outcome]}`);}
     document.end();
   });
 }

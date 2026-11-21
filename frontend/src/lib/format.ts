@@ -12,7 +12,8 @@ export function formatRps(value: number): string {
 }
 
 export function formatLatency(value: number): string {
-  if (!Number.isFinite(value) || value <= 0) return "—";
+  if (!Number.isFinite(value)) return "—";
+  if (value <= 0) return "0 ms";
   if (value < 1000) return `${value.toFixed(value < 10 ? 1 : 0)} ms`;
   return `${(value / 1000).toFixed(2)} s`;
 }

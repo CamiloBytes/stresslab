@@ -50,8 +50,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   health: () => request<Health>("/api/health"),
+  analyzeRun:(id:string)=>request<NonNullable<Run['aiAnalysis']>>(`/api/runs/${id}/analyze`,{method:'POST'}),
+  baseline:(id:string)=>request<Run|null>(`/api/runs/${id}/baseline`),
+  coverage:(id:string)=>request<{version:number;method:string;url:string;stress:'pass'|'fail'|'skip'|null;security:'pass'|'fail'|'skip'|null}[]>(`/api/security/contracts/${id}/coverage`),
+  saveContract:(projectId:string,definition:unknown)=>request<{version:number}>(`/api/security/contracts/${projectId}`,{method:'POST',body:JSON.stringify(definition)}),
+  getContract:(projectId:string,url:string,method:string)=>request<Record<string,unknown>|null>(`/api/security/contracts/${projectId}?${new URLSearchParams({method,url})}`),
   recordFinding: (input: Record<string,string>) => request<SecurityAssessment>('/api/security/assessments/manual',{method:'POST',body:JSON.stringify(input)}),
-  scan: (projectId: string,targetUrl: string) => request<SecurityAssessment>('/api/security/assessments/scan',{method:'POST',body:JSON.stringify({projectId,targetUrl})}),
+  scan: (projectId: string,targetUrl: string,expected?: {status:number; mediaType?:string}) => request<SecurityAssessment>('/api/security/assessments/scan',{method:'POST',body:JSON.stringify({projectId,targetUrl,expected})}),
 
   listScenarios: () => request<Scenario[]>("/api/scenarios"),
   createScenario: (input: ScenarioInput) =>

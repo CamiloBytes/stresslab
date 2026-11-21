@@ -8,6 +8,7 @@ import { useRunStream } from "./hooks/useRunStream";
 import { useScenarios } from "./hooks/useScenarios";
 import { useToast } from "./hooks/useToast";
 import { AppShell, type View } from "./components/layout/AppShell";
+import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then(m => ({default:m.DashboardPage})));
 const HistoryPage = lazy(() => import('./pages/HistoryPage').then(m => ({default:m.HistoryPage})));
 const ScenariosPage = lazy(() => import('./pages/ScenariosPage').then(m => ({default:m.ScenariosPage})));
@@ -26,7 +27,7 @@ export default function App() {
   const health = useHealth();
   const { scenarios, loading: scenariosLoading, create, update, remove } = useScenarios();
   const { projects, loading: projectsLoading, refresh: refreshProjects } = useProjects();
-  const { connected, activeRun, live, series, logs, reset } = useRunStream();
+  const { connected, activeRun, live, series, logs, reset, clearTelemetry } = useRunStream();
   const { runs, refresh: refreshRuns } = useRunHistory();
   const { push: pushToast } = useToast();
 
@@ -122,14 +123,23 @@ export default function App() {
     [remove, pushToast],
   );
 
+  useEffect(() => {
+    if (activeRun?.status === "running") setSelectedRunId(activeRun.id);
+  }, [activeRun?.id, activeRun?.status]);
+
+  const handleClearDashboard = useCallback(() => {
+    setSelectedRunId(null);
+    clearTelemetry();
+  }, [clearTelemetry]);
+
   const busy = starting || activeRun?.status === "running";
   const allRuns = activeRun ? [activeRun, ...runs.filter((run) => run.id !== activeRun.id)] : runs;
   const recentRuns = allRuns.slice(0, 5);
-  const selectedRun = allRuns.find((run) => run.id === selectedRunId)
-    ?? (activeRun?.status === "running" ? activeRun : allRuns[0] ?? null);
+  const selectedRun = allRuns.find((run) => run.id === selectedRunId) ?? null;
 
   return (
     <AppShell view={view} onNavigate={setView} health={health} connected={connected} activeRun={activeRun}>
+      <ErrorBoundary key={view}>
       <Suspense fallback={<p role="status">Cargando vista…</p>}>
       {view === "dashboard" ? (
         <DashboardPage
@@ -150,6 +160,7 @@ export default function App() {
           runAgainDisabled={Boolean(busy)}
           onStart={() => void startScenario(selectedScenarioId)}
           onStop={() => void handleStop()}
+          onClear={handleClearDashboard}
         />
       ) : null}
 
@@ -184,6 +195,7 @@ export default function App() {
         />
       ) : null}
       </Suspense>
+      </ErrorBoundary>
     </AppShell>
   );
 }

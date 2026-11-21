@@ -1,3 +1,4 @@
+import { useId, useState } from 'react';
 import type {
   InputHTMLAttributes,
   ReactNode,
@@ -6,6 +7,7 @@ import type {
 } from "react";
 
 interface FieldShellProps {
+  controlId: string;
   label: string;
   hint?: string;
   error?: string;
@@ -13,17 +15,22 @@ interface FieldShellProps {
   className?: string;
 }
 
-function FieldShell({ label, hint, error, children, className = "" }: FieldShellProps) {
+function FieldShell({ controlId, label, hint, error, children, className = "" }: FieldShellProps) {
+  const [open, setOpen] = useState(false);
   return (
-    <label className={`flex flex-col gap-1.5 ${className}`}>
-      <span className="text-xs font-medium tracking-wide text-sky/60">{label}</span>
+    <div className={`relative flex flex-col gap-1.5 ${className}`}>
+      <div className="flex items-center gap-2">
+        <label htmlFor={controlId} className="text-xs font-medium tracking-wide text-sky/80">{label}</label>
+        {hint && <span onMouseEnter={()=>setOpen(true)} onMouseLeave={()=>setOpen(false)}>
+          <button type="button" aria-label={`Ayuda: ${label}`} aria-expanded={open} aria-controls={`${controlId}-help`} onFocus={()=>setOpen(true)} onBlur={()=>setOpen(false)} onClick={()=>setOpen(true)} onKeyDown={event=>{if(event.key==='Escape'){event.stopPropagation();setOpen(false);}}} className="inline-grid h-5 w-5 place-items-center rounded-full border border-sky/40 text-xs font-semibold text-sky/80 focus-visible:outline-cyan-glow">i</button>
+          <span id={`${controlId}-help`} role="tooltip" hidden={!open} className="absolute top-5 left-0 z-30 max-w-full rounded-md border border-line bg-hull px-3 py-2 text-xs leading-relaxed text-sky shadow-lg">{hint}</span>
+        </span>}
+      </div>
       {children}
       {error ? (
         <span className="text-xs text-rose">{error}</span>
-      ) : hint ? (
-        <span className="text-xs text-sky/40">{hint}</span>
       ) : null}
-    </label>
+    </div>
   );
 }
 
@@ -38,9 +45,10 @@ interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export function TextField({ label, hint, error, containerClassName, className = "", ...rest }: TextFieldProps) {
+  const generated = useId(); const id = rest.id ?? generated;
   return (
-    <FieldShell label={label} hint={hint} error={error} className={containerClassName}>
-      <input {...rest} className={`${CONTROL_CLASS} ${className}`} />
+    <FieldShell controlId={id} label={label} hint={hint} error={error} className={containerClassName}>
+      <input {...rest} id={id} aria-describedby={hint ? `${id}-help` : rest['aria-describedby']} className={`${CONTROL_CLASS} ${className}`} />
     </FieldShell>
   );
 }
@@ -52,9 +60,10 @@ interface TextAreaFieldProps extends TextareaHTMLAttributes<HTMLTextAreaElement>
 }
 
 export function TextAreaField({ label, hint, error, className = "", ...rest }: TextAreaFieldProps) {
+  const generated = useId(); const id = rest.id ?? generated;
   return (
-    <FieldShell label={label} hint={hint} error={error}>
-      <textarea {...rest} className={`${CONTROL_CLASS} font-mono text-xs leading-relaxed ${className}`} />
+    <FieldShell controlId={id} label={label} hint={hint} error={error}>
+      <textarea {...rest} id={id} aria-describedby={hint ? `${id}-help` : rest['aria-describedby']} className={`${CONTROL_CLASS} font-mono text-xs leading-relaxed ${className}`} />
     </FieldShell>
   );
 }
@@ -72,9 +81,10 @@ interface SelectFieldProps extends SelectHTMLAttributes<HTMLSelectElement> {
 }
 
 export function SelectField({ label, options, hint, error, className = "", ...rest }: SelectFieldProps) {
+  const generated = useId(); const id = rest.id ?? generated;
   return (
-    <FieldShell label={label} hint={hint} error={error}>
-      <select {...rest} className={`${CONTROL_CLASS} ${className}`}>
+    <FieldShell controlId={id} label={label} hint={hint} error={error}>
+      <select {...rest} id={id} aria-describedby={hint ? `${id}-help` : rest['aria-describedby']} className={`${CONTROL_CLASS} ${className}`}>
         {options.map((option) => (
           <option key={option.value} value={option.value} className="bg-hull text-sky">
             {option.label}

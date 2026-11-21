@@ -3,6 +3,8 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { z } from 'zod';
 import { HttpError } from '../../middleware/http-error.js';
 import { normalizeZapReport } from './normalizer.js';
+import { observeResponse } from './response-contract.js';
+import { evaluate, labels, type Contract } from '../contracts.js';
 
 const base = process.env.ZAP_URL || 'http://zap:8080';
 async function call(path: string, args: Record<string,string> = {}) {
@@ -26,17 +28,23 @@ export function allowedTarget(raw: string, scope: string[]) {
   return url.href;
 }
 const alertsSchema = z.object({alerts:z.array(z.object({pluginId:z.string(),alert:z.string(),risk:z.string(),url:z.string(),method:z.string().optional(),param:z.string().optional(),solution:z.string().optional(),reference:z.string().optional()}))});
-export async function inspectResponse(url:string) {
+export async function inspectResponse(url:string,contract?:Contract|null) {
   if (!(await zapStatus()).available) throw new HttpError(503,'Servicio ZAP no disponible');
   await call('core/action/newSession',{overwrite:'true'});
   const reply = await call('core/action/accessUrl',{url,followRedirects:'false'});
-  if (!Array.isArray(reply.accessUrl) || !reply.accessUrl.some((m: {responseHeader?:string})=> /^HTTP\/\S+ [1-5]\d\d/.test(m.responseHeader || ''))) throw new HttpError(502,'No se observó una respuesta HTTP del objetivo');
+  const messages = z.array(z.object({responseHeader:z.string(),responseBody:z.string().optional()})).safeParse(reply.accessUrl);
+  const msg = messages.success && messages.data.find(m=>(observeResponse(m.responseHeader)?.status??0)>=200);
+  const observed = msg && observeResponse(msg.responseHeader);
+  if (!observed) throw new HttpError(502,'No se observó una respuesta HTTP del objetivo');
   const until = Date.now()+45000;
   do {
     await delay(700);
     if ((await call('pscan/view/recordsToScan')).recordsToScan === '0') {
       const {alerts} = alertsSchema.parse(await call('core/view/alerts',{baseurl:url,start:'0',count:'500'}));
-      return normalizeZapReport({alerts:alerts.filter(a=>a.url===url).map(a=>({pluginid:a.pluginId,alert:a.alert,risk:a.risk,solution:a.solution,reference:a.reference,instances:[{uri:url,method:a.method || 'GET',param:a.param}]}))});
+      const findings = normalizeZapReport({alerts:alerts.filter(a=>a.url===url).map(a=>({pluginid:a.pluginId,alert:a.alert,risk:a.risk,solution:a.solution,reference:a.reference,instances:[{uri:url,method:a.method || 'GET',param:a.param}]}))});
+      const names=contract?labels(contract):[];
+      const rules=contract?evaluate(contract,observed.status,observed.mediaType??'',msg.responseBody).map((outcome,i)=>({label:names[i],outcome})):undefined;
+      return {findings, observed,rules};
     }
   } while(Date.now()<until);
   throw new HttpError(504,'La revisión pasiva excedió el tiempo límite');

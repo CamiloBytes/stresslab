@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { env } from "../config/env.js";
 import { HttpError } from "../middleware/http-error.js";
 import { scenarioRepository } from "../models/scenario.repository.js";
@@ -16,6 +16,8 @@ import {
   type K6ProcessHandle,
 } from "./k6.service.js";
 import { sseHub } from "./sse.service.js";
+import { latestContract, labels, recordOutcome, type Contract } from './contracts.js';
+import { projectRepository } from '../models/project.repository.js';
 
 interface K6Point {
   type?: string;
@@ -178,7 +180,7 @@ function evaluateThresholds(scenario: Scenario, summary: Omit<RunSummary, "thres
   return results;
 }
 
-function extractSummary(raw: unknown, elapsedSec: number, scenario: Scenario): RunSummary {
+function extractSummary(raw: unknown, elapsedSec: number, scenario: Scenario,contract?:Contract|null): RunSummary {
   const data = raw as SummaryMetrics;
   const metrics = data?.metrics;
   const reqs = valuesOf(metrics, "http_reqs");
@@ -208,11 +210,18 @@ function extractSummary(raw: unknown, elapsedSec: number, scenario: Scenario): R
     p99Ms: numeric(duration["p(99)"]),
     rps: numeric(reqs.rate) || (elapsedSec > 0 ? requests / elapsedSec : 0),
     iterations: numeric(iterations.count),
-    checksRate: numeric(checks.value) || numeric(checks.rate) || 1,
+    checksRate: checks.value ?? checks.rate ?? (checks.passes+checks.fails>0 ? checks.passes/(checks.passes+checks.fails):null),
     durationSec: elapsedSec,
   } satisfies Omit<RunSummary, "thresholds">;
 
-  return { ...base, thresholds: evaluateThresholds(scenario, base) };
+  const summary:RunSummary={...base,thresholds:evaluateThresholds(scenario,base)};
+  if(contract){
+    const counts=[...labels(contract),'Respuesta completa'].map((label,i)=>({label,pass:numeric(valuesOf(metrics,`contract_${i}_pass`).count),fail:numeric(valuesOf(metrics,`contract_${i}_fail`).count),skip:numeric(valuesOf(metrics,`contract_${i}_skip`).count)}));
+    summary.contract={version:contract.version,minPass:contract.minPass,sampleEvery:contract.sampleEvery,counts};
+    const {pass,fail,skip}=counts[counts.length-1];
+    if(pass+fail+skip){const actual=100*pass/(pass+fail+skip);summary.thresholds.push({label:'Respuestas conformes (%)',actual,target:contract.minPass,passed:actual>=contract.minPass});}
+  }
+  return summary;
 }
 
 const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
@@ -257,6 +266,8 @@ class RunService {
     }
 
     const runId = randomUUID();
+    const contract=await latestContract(scenario.projectId,scenario.method,scenario.url);
+    const project=scenario.projectId?await projectRepository.get(scenario.projectId):null;
     const runDir = path.resolve(env.runsDir, runId);
     fs.mkdirSync(runDir, { recursive: true });
 
@@ -266,7 +277,7 @@ class RunService {
     const targetUrl = dockerMode ? rewriteLocalhostForDocker(scenario.url) : scenario.url;
     fs.writeFileSync(
       scriptPath,
-      generateScript({ ...scenario, url: targetUrl }),
+      generateScript({ ...scenario, url: targetUrl },contract),
       "utf8",
     );
 
@@ -323,7 +334,7 @@ class RunService {
 
           let summary: RunSummary;
           if (usableSummary) {
-            summary = extractSummary(usableSummary, elapsedSec, scenario);
+            summary = extractSummary(usableSummary, elapsedSec, scenario,contract);
           } else {
             const live = toLiveMetrics(acc);
             const base = {
@@ -335,13 +346,16 @@ class RunService {
               p99Ms: 0,
               rps: live.rps,
               iterations: live.iterations,
-              checksRate: live.checksRate,
+              checksRate: acc.checksPasses+acc.checksFails ? live.checksRate : null,
               durationSec: elapsedSec,
             } satisfies Omit<RunSummary, "thresholds">;
             summary = { ...base, thresholds: evaluateThresholds(scenario, base) };
           }
 
           const wasStopping = this.active?.stopping ?? false;
+          summary.loadProfile={mode:scenario.loadMode,stages:scenario.stages,rate:scenario.arrivalRate,duration:scenario.duration,maxVUs:scenario.maxVUs,thinkTime:scenario.thinkTime,environment:project?.environment??'other'};
+          const {id:_id,name:_name,createdAt:_created,updatedAt:_updated,...settings}=scenario;
+          summary.comparisonKey=createHash('sha256').update(JSON.stringify([settings,summary.loadProfile.environment,contract?.version??null])).digest('hex');
           const status = wasStopping ? "stopped" : code === 0 ? "completed" : "failed";
 
           await runRepository.update(runId, {
@@ -355,6 +369,7 @@ class RunService {
           });
 
           const finished = await runRepository.get(runId);
+          if(contract){const total=summary.contract?.counts.at(-1);await recordOutcome(contract.version,'stressResult',!total||!total.pass&&!total.fail?'skip':summary.thresholds.some(t=>t.label==='Respuestas conformes (%)'&&!t.passed)?'fail':'pass');}
           sseHub.broadcast("status", { run: finished });
           sseHub.broadcast("metrics", { runId, ...toLiveMetrics(acc) });
 
